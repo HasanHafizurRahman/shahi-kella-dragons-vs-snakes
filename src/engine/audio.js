@@ -2,9 +2,17 @@ import * as THREE from 'three';
 import { Q, G } from './util.js';
 import { Film } from './film.js';
 
+// ---- score + foley: Royal Mughal-Sultani Darbar, Bengali-Indian Raga & Royal King Cobra (রাজগোখরা) vs. Dragons ----
+        // Crimson Dragon: Royal Mughal Sarangi/Esraj, Shahi Shehnai, Sitar & Sarod (with Jawari bridge buzz & sympathetic Taraf strings),
+        //                 Mughal Naqqara kettledrums, Pakhawaj, Tabla Dayan (syahi-tuned harmonics) & Kansa Gong over a 4-string Tanpura drone.
+        // Royal King Cobra (Ophiophagus hannah · ফণা তোলা রাজগোখরা, 27.0s-67.5s): Hypnotic Snake-Charmer Been/Pungi gourd-reed pipe in Raag Bhairavi/Todi,
+        //                 Damaru/Ghungroo rattles, plus hyper-accurate King Cobra foley (deep hollow tracheal diverticulum growl-hiss, cervical hood-flare
+        //                 rib snap, supersonic whip-strike ছোবল, proteroglyphous fang-bite crunch, pressurized venom spray & keratin belly-scute slithering).
+        // White Dragon (emerges from sky portal at 57.2s to rescue Crimson Dragon): Celestial Bowed Glass, Bengali Bamboo Bansuri, Temple Ghanta bells & frost-lightning shriek.
+        // synth() is self-contained so it can run inside a Worker; P carries the film's own timeline constants on the 80 bpm grid.
         function synth(P) {
             const SR = P.SR, DUR = P.DUR, N = Math.floor(SR * DUR), T = P.T, TAU = Math.PI * 2;
-            const L = new Float32Array(N), R = new Float32Array(N), S = new Float32Array(N), S2 = new Float32Array(N), SW = 0.8;      // dry left, dry right, reverb send, and which side of the room that send enters from (+ right): a voice on the left echoes on the left first
+            const L = new Float32Array(N), R = new Float32Array(N), S = new Float32Array(N), S2 = new Float32Array(N), SW = 0.8;      // dry left, dry right, reverb send, and stereo room side
             const prof = {}; let pt = Date.now(); const lap = k => { const n = Date.now(); prof[k] = (prof[k] || 0) + n - pt; pt = n; };
             let seed = 12345; const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
             let ns = 9781; const nz = () => { ns = (Math.imul(ns, 1664525) + 1013904223) | 0; return ns * 4.656612873077393e-10; };   // fast white noise
@@ -17,7 +25,7 @@ import { Film } from './film.js';
                 const w = TAU * f / SR, c = Math.cos(w), s = Math.sin(w), al = s / (2 * q), a0 = 1 + al; let b0, b1, b2;
                 if (type === 'lp') { b0 = (1 - c) / 2; b1 = 1 - c; b2 = b0; } else if (type === 'hp') { b0 = (1 + c) / 2; b1 = -(1 + c); b2 = b0; } else { b0 = al; b1 = 0; b2 = -al; }
                 if (type === 'hs') {
-                    const A = Math.pow(10, q / 40), be = s / 2 * Math.sqrt((A + 1 / A) * (1 / 0.8 - 1) + 2) * 2 * Math.sqrt(A), d0 = (A + 1) - (A - 1) * c + be;        // high shelf: q is the gain in dB
+                    const A = Math.pow(10, q / 40), be = s / 2 * Math.sqrt((A + 1 / A) * (1 / 0.8 - 1) + 2) * 2 * Math.sqrt(A), d0 = (A + 1) - (A - 1) * c + be;
                     return mk(A * ((A + 1) + (A - 1) * c + be) / d0, -2 * A * ((A - 1) + (A + 1) * c) / d0, A * ((A + 1) + (A - 1) * c - be) / d0, 2 * ((A - 1) - (A + 1) * c) / d0, ((A + 1) - (A - 1) * c - be) / d0);
                 }
                 return mk(b0 / a0, b1 / a0, b2 / a0, -2 * c / a0, (1 - al) / a0);
@@ -26,63 +34,84 @@ import { Film } from './film.js';
                 const o = { b0, b1, b2, a1, a2, x1: 0, x2: 0, y1: 0, y2: 0 };
                 o.p = x => { const y = o.b0 * x + o.b1 * o.x1 + o.b2 * o.x2 - o.a1 * o.y1 - o.a2 * o.y2; o.x2 = o.x1; o.x1 = x; o.y2 = o.y1; o.y1 = y; return y; }; return o;
             }
-            function svf() { const o = { a: 0, b: 0, lp: 0, bp: 0, hp: 0, g: 0, k: 1, f: -1 }; o.p = (x, f, q) => { if (f !== o.f) { o.g = Math.tan(Math.PI * Math.min(f, SR * 0.45) / SR); o.f = f; } const g = o.g, k = 1 / q, a1 = 1 / (1 + g * (g + k)), v3 = x - o.b, v1 = a1 * o.a + g * a1 * v3, v2 = o.b + g * a1 * o.a + g * g * a1 * v3; o.a = 2 * v1 - o.a; o.b = 2 * v2 - o.b; o.lp = v2; o.bp = v1; o.hp = x - k * v1 - v2; return v2; }; return o; }
-            // a sound rendered once into a small buffer, then mixed wherever it is struck
+            function svf() { const o = { a: 0, b: 0, lp: 0, bp: 0, hp: 0, g: 0, k: 1, f: -1 }; o.p = (x, f, q) => { if (f !== o.f) { o.g = Math.tan(Math.PI * Math.min(Math.max(20, f), SR * 0.45) / SR); o.f = f; } const g = o.g, k = 1 / q, a1 = 1 / (1 + g * (g + k)), v3 = x - o.b, v1 = a1 * o.a + g * a1 * v3, v2 = o.b + g * a1 * o.a + g * g * a1 * v3; o.a = 2 * v1 - o.a; o.b = 2 * v2 - o.b; o.lp = v2; o.bp = v1; o.hp = x - k * v1 - v2; return v2; }; return o; }
             const memo = new Map(), cached = (k, make) => { let b = memo.get(k); if (b === undefined) { b = make(); memo.set(k, b); } return b; };
             function add(buf, t, g, pan, send) { const i0 = ix(t), gl = g * (1 - pan) * 1.2, gr = g * pan * 1.2, gs = g * send; let n = buf.length; if (i0 + n > N) n = N - i0; for (let i = i0 < 0 ? -i0 : 0; i < n; i++) { const v = buf[i], j = i0 + i; L[j] += v * gl; R[j] += v * gr; S[j] += v * gs; } }
 
             // the beat sheet
             const tE = T.EMERGE, tD = T.DRUMS, tC = T.CHARGE, R0 = T.ROAR, R1 = T.ROAR_END, tO = T.OMEN, tDe = T.DESCENT, tF = T.FACEOFF, W0 = T.WROAR, W1 = T.WROAR_END, tC1 = T.CLASH1, tFi = T.FIRE2, tBo = T.BOLT, tC2 = T.CLASH2, tS = T.SPLASH, tBe = T.BEAM, tBl = T.BLAST, tFn = T.FINALE, tG = T.GONG, tOut = T.OUT;
             const STR_DEF = [0.45, 1.2, 1.65, 2.55].map(d => tO + d), STR_IN = P.STRIKES ? Array.from(P.STRIKES).filter(s => s === +s && s > 0 && s < DUR).sort((a, b) => a - b) : [];
-            const STR = STR_IN.length ? STR_IN : STR_DEF;                    // lightning strikes: the film's own list (any number, any spacing), else the four default ones
-            const CUT = tBl - 0.12, END = Math.min(DUR - 2, tOut + 1.4);     // everything stops at CUT so the blast lands in silence; END = silence for the loop
+            const STR = STR_IN.length ? STR_IN : STR_DEF;
+            const CUT = tBl - 0.12, END = Math.min(DUR - 2, tOut + 1.4);
             const B = 0.75, q = B / 4;                                       // one beat at 80 bpm, one sixteenth
-            // the picture, as the page read it at load (P.pic, see Score.picture): where each head is on screen, when the lake and the cloud give the
-            // two up. Every voice is panned from it. Without it (no dragons on the page): the film's usual staging, red on the left, white on the right.
             const PIC = P.pic || {}, HX = PIC.hx && PIC.hx.r && PIC.hx.w ? PIC.hx : null, AX = PIC.ax || {};
             const hxAt = (a, t) => { const x = clamp(t, 0, DUR) * (HX.hz || 20), i = Math.min(a.length - 2, x | 0); return a[i] + (a[i + 1] - a[i]) * (x - i); };
-            const scrR = t => HX ? hxAt(HX.r, t) : t < tDe ? 0 : -0.3, scrW = t => HX ? hxAt(HX.w, t) : 0.3;        // screen x of each head: -1 left edge .. +1 right edge
-            const panX = (x, side = 0) => clamp(0.5 + PANW * (x === x ? x : 0) + 0.05 * side, 0.12, 0.88), duo = t => sm(tDe - 1, tDe + 1, t), panR = t => panX(scrR(t), -duo(t)), panW = t => panX(scrW(t), 1);      // screen x to pan; once there are two, each leans a little to its own side
+            const scrR = t => HX ? hxAt(HX.r, t) : t < tDe ? 0 : -0.3, scrW = t => HX ? hxAt(HX.w, t) : 0.3, scrS = t => HX && HX.s ? hxAt(HX.s, t) : scrW(t);
+            const panX = (x, side = 0) => clamp(0.5 + PANW * (x === x ? x : 0) + 0.05 * side, 0.12, 0.88), duo = t => sm(tDe - 1, tDe + 1, t), panR = t => panX(scrR(t), -duo(t)), panW = t => panX(scrW(t), 1), panS = t => panX(scrS(t), 1);
             const PANW = 0.62, axis = (k, d) => AX[k] === +AX[k] ? AX[k] : d;
-            // what else the picture does (P.pic.ev, see Score.world): the leap, the lake, the fronts, the crowns, the birds. Without it (or with stem 'old') the film sounds as it did before
             const EV = P.stem === 'old' ? null : PIC.ev || null, EHz = EV && EV.hz || 50;
             const tab = (a, hz, t) => { if (!a) return 0; const x = t * hz; if (!(x > 0)) return a[0]; const i = x | 0; return i >= a.length - 1 ? a[a.length - 1] : a[i] + (a[i + 1] - a[i]) * (x - i); };
             const tLeap = EV && EV.tLeap > 0 ? EV.tLeap : -9, LAPS = []; if (EV && EV.laps) for (let j = 0; j + 5 < EV.laps.length; j += 6) LAPS.push(Array.from(EV.laps.subarray(j, j + 6)));
-            let ssNew = 0; const LAP0 = LAPS.find(l => !l[5]), tHit = LAP0 ? LAP0[0] : -9;      // the red loong throws itself off the rock; its body goes into the lake
+            let ssNew = 0; const LAP0 = LAPS.find(l => !l[5]), tHit = LAP0 ? LAP0[0] : -9;
 
-            // ================= instruments =================
-            // bowed / blown lead with slurs, scoops and delayed vibrato. notes: [t, dur, midi, vel]
+            // ================= Mughal-Sultani & Bengali-Indian Instruments =================
+            // Bowed / blown lead with Hindustani meend (glides), gamak vibrato & sympathetic taraf resonance.
+            // kinds: 'erhu'/'sarangi' (Royal Mughal Sarangi / Bengali Esraj), 'pungi' (Snake-Charmer Been/Pungi reed pipe),
+            //        'xiao'/'bansuri' (Bengali Bamboo Bansuri flute), 'dizi'/'shehnai' (Royal Mughal Naubat Shehnai)
             function lead(notes, o) {
-                const erhu = o.kind === 'erhu', xiao = o.kind === 'xiao', tr = o.tr === undefined ? -12 : o.tr, pont = o.pont || 0, vib = o.vib === undefined ? 1 : o.vib;
+                const sarangi = o.kind === 'erhu' || o.kind === 'sarangi', bansuri = o.kind === 'xiao' || o.kind === 'bansuri', pungi = o.kind === 'pungi';
+                const tr = o.tr === undefined ? (sarangi ? -12 : 0) : o.tr, pont = o.pont || 0, vib = o.vib === undefined ? 1 : o.vib;
                 notes = notes.map(n => [n[0], n[1], n[2] + tr, n[3]]);
-                const last = notes[notes.length - 1], i0 = Math.max(0, ix(notes[0][0] - 0.03)), i1 = Math.min(N, ix(last[0] + last[1] + 0.6));
-                const f1 = bq('bp', 470, 1.6), f2 = bq('bp', 1100, 3.0), f3 = bq('bp', 2400, 4.0), f4 = bq('bp', 3400, 3.0), lp = bq('lp', erhu ? 2300 : xiao ? 3800 : 7000, 0.7), bn = bq('bp', erhu ? 2100 : 2600, 1.2), air = bq('hp', 4500, 0.7), hp = bq('hp', erhu ? 180 : 300, 0.7), bz = bq('bp', 3100, 1.3), br = svf();
-                const kg = erhu ? 0.00042 : xiao ? 0.0006 : 0.0009, kat = erhu ? 0.00045 : xiao ? 0.0003 : 0.0011, krl = xiao ? 0.0001 : 0.00016, vdep = erhu ? 0.0115 : xiao ? 0.004 : 0.006;
+                const last = notes[notes.length - 1], i0 = Math.max(0, ix(notes[0][0] - 0.03)), i1 = Math.min(N, ix(last[0] + last[1] + 0.65));
+                const f1 = bq('bp', sarangi ? 340 : pungi ? 690 : 580, sarangi ? 1.8 : 2.4);
+                const f2 = bq('bp', sarangi ? 860 : pungi ? 1460 : 1290, 3.2);
+                const f3 = bq('bp', sarangi ? 1680 : pungi ? 2720 : 2420, 4.2);
+                const f4 = bq('bp', sarangi ? 2840 : pungi ? 3650 : 3450, 5.5);
+                const lp = bq('lp', sarangi ? 2850 : bansuri ? 3400 : pungi ? 4200 : 5400, 0.75);
+                const bn = bq('bp', sarangi ? 1850 : bansuri ? 2200 : 2500, 1.2), air = bq('hp', 4200, 0.7), hp = bq('hp', sarangi ? 155 : pungi ? 240 : 260, 0.7), bz = bq('bp', pungi ? 1950 : 2650, 1.6), br = svf();
+                // Hindustani meend (fluid pitch glide) & gamak vibrato rates
+                const kg = sarangi ? 0.00034 : bansuri ? 0.00052 : pungi ? 0.00075 : 0.00068;
+                const kat = sarangi ? 0.00042 : bansuri ? 0.00028 : pungi ? 0.00095 : 0.00085, krl = bansuri ? 0.0001 : 0.00015;
+                const vdep = sarangi ? 0.0135 : bansuri ? 0.0055 : pungi ? 0.016 : 0.0085;
                 const gl = o.gain * (1 - o.pan) * 1.2, gr = o.gain * o.pan * 1.2, gs = o.gain * o.send;
-                let k = 0, lf = notes[0][2] - (erhu ? 1.6 : 0.4), a = 0, ph = 0, vph = rnd() * TAU, tin = 0, drift = 0, bf = 500;
+                let k = 0, lf = notes[0][2] - (sarangi ? 1.8 : pungi ? 1.2 : 0.5), a = 0, ph = 0, dph = 0, vph = rnd() * TAU, tin = 0, drift = 0, bf = 500;
+                const droneDt = hz(pungi ? 55 : 67) / SR; // Pungi gourd tonic drone on G
                 for (let i = i0; i < i1; i++) {
-                    const t = i / SR; while (k < notes.length - 1 && t >= notes[k + 1][0]) { const gap = notes[k + 1][0] - (notes[k][0] + notes[k][1]); k++; tin = 0; if (gap > 0.12) lf = notes[k][2] - (erhu ? 1.3 : 0.5); }
+                    const t = i / SR; while (k < notes.length - 1 && t >= notes[k + 1][0]) { const gap = notes[k + 1][0] - (notes[k][0] + notes[k][1]); k++; tin = 0; if (gap > 0.12) lf = notes[k][2] - (sarangi ? 1.5 : pungi ? 1.1 : 0.5); }
                     const n = notes[k], gate = t >= n[0] && t < n[0] + n[1]; tin += 1 / SR;
                     lf += (n[2] - lf) * kg; a += ((gate ? n[3] : 0) - a) * (gate ? kat : krl); drift += (nz() * 0.5 - drift) * 0.0004;
-                    const vd = vdep * vib * sm(0.16, 0.6, tin) * (0.6 + 0.4 * n[3]); vph += TAU * (5.4 + 0.5 * Math.sin(t * 0.9)) / SR;
-                    const sv = Math.sin(vph), f = 440 * Math.pow(2, (lf - 69) / 12) * (1 + vd * sv + drift * 0.004), dt = f / SR; ph += dt; if (ph >= 1) ph -= 1;
+                    const vRate = pungi ? (6.6 + 0.8 * Math.sin(t * 2.4)) : (5.2 + 0.5 * Math.sin(t * 0.9));
+                    const vd = vdep * vib * sm(pungi ? 0.04 : 0.14, pungi ? 0.28 : 0.55, tin) * (0.6 + 0.4 * n[3]); vph += TAU * vRate / SR;
+                    const murki = pungi ? 0.018 * Math.sin(tin * 58) * Math.exp(-tin * 14) : 0;
+                    const sv = Math.sin(vph), f = 440 * Math.pow(2, (lf - 69) / 12) * (1 + vd * sv + murki + drift * 0.004), dt = f / SR;
+                    ph += dt; if (ph >= 1) ph -= 1; dph += droneDt; if (dph >= 1) dph -= 1;
                     const nn = nz(); let y;
-                    if (erhu) {
-                        const s = saw(ph, dt) * 0.7 + saw((ph * 2) % 1, dt * 2) * 0.18 + bn.p(nn) * 0.11 * (0.4 + a), sw = 1 + 0.12 * sv;       // snakeskin box: nasal formants, rosin on top
-                        y = (f1.p(s) + f2.p(s) * 0.52 * sw + f3.p(s) * (0.22 + 0.35 * pont) + f4.p(s) * (0.13 + 0.3 * pont) + lp.p(s) * (0.5 - 0.25 * pont)) * a * (1 + 0.05 * Math.sin(vph * 0.5)) + air.p(nn) * 0.035 * a;
+                    if (sarangi) {
+                        // Royal Mughal Sarangi / Bengali Esraj: gut-string bow + skin belly + sympathetic taraf shimmer (f4)
+                        const s = saw(ph, dt) * 0.68 + saw((ph * 2) % 1, dt * 2) * 0.22 + (ph < 0.38 ? 0.18 : -0.11) + bn.p(nn) * 0.085 * (0.35 + a), sw = 1 + 0.15 * sv;
+                        y = (f1.p(s) * 1.18 + f2.p(s) * 0.72 * sw + f3.p(s) * (0.36 + 0.35 * pont) + f4.p(s) * (0.24 + 0.25 * pont) + lp.p(s) * (0.48 - 0.2 * pont)) * a * (1 + 0.06 * Math.sin(vph * 0.5)) + air.p(nn) * 0.025 * a;
                     }
-                    else if (xiao) {
-                        if ((i & 15) === 0) bf = f; br.p(nn, bf, 7); const w = TAU * ph;                                                // end-blown flute: mostly breath round a soft tone
-                        y = lp.p((Math.sin(w) + 0.16 * Math.sin(2 * w) + 0.05 * Math.sin(3 * w)) * a * 0.5 + br.bp * 0.55 * a + air.p(nn) * 0.02 * a + bn.p(nn) * 0.2 * a * Math.exp(-tin * 14));
+                    else if (bansuri) {
+                        // Bengali Bamboo Bansuri: warm cylindrical bamboo bore, breathy embouchure edge-tone & liquid meend
+                        if ((i & 15) === 0) bf = f; br.p(nn, bf, 8.5); const w = TAU * ph;
+                        y = lp.p((Math.sin(w) * 0.82 + 0.24 * Math.sin(2 * w + 0.3) + 0.08 * Math.sin(3 * w)) * a * 0.58 + br.bp * 0.46 * a + air.p(nn) * 0.018 * a + bn.p(nn) * 0.18 * a * Math.exp(-tin * 15));
+                    }
+                    else if (pungi) {
+                        // Snake-Charmer Been / Pungi: double-reed gourd pipe with nasal formants + continuous gourd drone
+                        const reed = saw(ph, dt) * 0.55 + (ph < 0.27 ? 0.75 : -0.28) * 0.55 + Math.sin(TAU * ph * 3) * 0.22;
+                        const gDrone = (saw(dph, droneDt) * 0.5 + (dph < 0.3 ? 0.5 : -0.2)) * 0.22;
+                        const raw = reed + gDrone + bn.p(nn) * 0.08;
+                        y = lp.p(Math.tanh((f1.p(raw) * 1.25 + f2.p(raw) * 1.35 + f3.p(raw) * 0.75 + bz.p(raw) * 0.55) * 1.35)) * a * 0.92;
                     }
                     else {
-                        const w = TAU * ph;                                                                                                       // dizi: bright, with the buzz of its reed membrane
-                        y = lp.p((Math.sin(w) + 0.30 * Math.sin(2 * w) + 0.10 * Math.sin(3 * w) + 0.04 * Math.sin(5 * w)) * a * 0.55 + bz.p(saw(ph, dt)) * 0.20 * a * a + bn.p(nn) * (0.05 * a + 0.25 * a * Math.exp(-tin * 30)));
+                        // Royal Mughal Naubat Shehnai: regal quadruple-reed conical woodwind
+                        const w = TAU * ph, reed = saw(ph, dt) * 0.52 + (ph < 0.33 ? 0.65 : -0.32) * 0.45;
+                        y = lp.p((Math.sin(w) * 0.45 + 0.38 * Math.sin(2 * w) + 0.22 * Math.sin(3 * w) + 0.10 * Math.sin(5 * w)) * a * 0.42 + (f1.p(reed) * 0.7 + f2.p(reed) * 0.95 + f3.p(reed) * 0.55 + bz.p(reed) * 0.38) * a + bn.p(nn) * (0.04 * a + 0.20 * a * Math.exp(-tin * 28)));
                     }
                     y = hp.p(y); L[i] += y * gl; R[i] += y * gr; S[i] += y * gs;
                 }
             }
-            // bowed glass: near-pure partials in the ratios of a glass bowl, slow bloom, a breath of friction
+            // Jal Tarang / Celestial Bowed Glass Bowl (for White Dragon's rescue arrival & pearl shimmer)
             function glass(t, dur, m, vel, pan = 0.66, send = 0.6) {
                 const f = hz(m), i0 = ix(t), len = Math.floor((dur + 1.6) * SR), nG = Math.floor(dur * SR), fr = bq('bp', Math.min(9000, f * 4.25), 2.5);
                 const pt = [[1, 1], [1.0013, 0.75], [2.32, 0.10], [4.25, 0.03]].map(p => { const w = TAU * f * p[0] / SR, a0 = rnd() * TAU; return [Math.cos(w), Math.sin(w), Math.cos(a0), Math.sin(a0), p[1]]; });
@@ -93,36 +122,72 @@ import { Film } from './film.js';
                     y = (y + fr.p(nz()) * 0.5) * a; if (j >= 0) { L[j] += y * gl; R[j] += y * gr; S[j] += y * gs; }
                 }
             }
-            function pluck(t, m, vel, pan, bright = 0.5, send = 0.30) {      // guzheng string (Karplus-Strong, plucked near the bridge)
-                add(cached('pl' + m + '_' + bright, () => {
-                    const f = hz(m), wb = 0.42 - 0.22 * bright, D = SR / f - wb, n = Math.floor(D - 0.1), fd = D - n, C = (1 - fd) / (1 + fd), d = new Float32Array(n); let lpv = 0; for (let i = 0; i < n; i++) { lpv += (nz() - lpv) * (0.25 + bright * 0.6); d[i] = lpv; }
-                    const pk = Math.max(2, Math.floor(n * 0.18)); for (let i = n - 1; i >= pk; i--) d[i] -= d[i - pk] * 0.6;
-                    const damp = Math.pow(0.001, 1 / (f * (2.6 + 220 / f))), len = Math.floor(SR * Math.min(3.0, 0.8 * (2.6 + 220 / f))), o = new Float32Array(len); let c = 0, z = 0, ax = 0, ay = 0;
-                    for (let i = 0; i < len; i++) { const y = d[c], w = y * (1 - wb) + z * wb, ap = C * w + ax - C * ay; z = y; ax = w; ay = ap; d[c] = ap * damp; if (++c === n) c = 0; o[i] = y * Math.min(1, i / 60) * (i > len - 4000 ? (len - i) / 4000 : 1); }
+            // Royal Sitar & Sarod (Karplus-Strong waveguide with curved Jawari bone-bridge buzz & Tumba gourd resonance)
+            function pluck(t, m, vel, pan, bright = 0.5, send = 0.32) {
+                const brKey = Math.round(bright * 10);
+                add(cached('pl' + m + '_' + brKey, () => {
+                    const f = hz(m), wb = 0.38 - 0.20 * bright, D = SR / f - wb, n = Math.floor(D - 0.1), fd = D - n, C = (1 - fd) / (1 + fd), d = new Float32Array(n);
+                    let lpv = 0; for (let i = 0; i < n; i++) { lpv += (nz() - lpv) * (0.28 + bright * 0.62); d[i] = lpv; }
+                    const pk = Math.max(2, Math.floor(n * 0.16)); for (let i = n - 1; i >= pk; i--) d[i] -= d[i - pk] * 0.62;
+                    const damp = Math.pow(0.001, 1 / (f * (2.8 + 240 / f))), len = Math.floor(SR * Math.min(3.2, 0.85 * (2.8 + 240 / f))), o = new Float32Array(len);
+                    const tumba = bq('bp', 255, 1.8), jawari = bq('bp', Math.min(5200, f * 5.2), 2.5);
+                    let c = 0, z = 0, ax = 0, ay = 0;
+                    for (let i = 0; i < len; i++) {
+                        const y = d[c], w = y * (1 - wb) + z * wb, ap = C * w + ax - C * ay; z = y; ax = w; ay = ap;
+                        // Jawari curved bridge grazing: subtle asymmetric harmonic enrichment inside the loop
+                        const jw = ap + 0.075 * bright * ap * (1 - Math.min(1, Math.abs(ap)));
+                        d[c] = clamp(jw * damp, -1.2, 1.2); if (++c === n) c = 0;
+                        const env = Math.min(1, i / 45) * (i > len - 4000 ? (len - i) / 4000 : 1);
+                        o[i] = (y * 0.78 + tumba.p(y) * 0.32 + jawari.p(y * Math.abs(y)) * (0.38 + 0.45 * bright)) * env;
+                    }
                     return o;
-                }), t, vel * 0.5, pan, send);
+                }), t, vel * 0.52, pan, send);
             }
-            function taiko(t, vel, pan, size = 1, send = 0.20) {             // skin: a falling sine and its overtone; stick: noise and a click
+            // Royal Mughal Naqqara (paired court kettledrums) & Pakhawaj / Bengali Dhak bass drum with Bayan pitch-inflection
+            function taiko(t, vel, pan, size = 1, send = 0.22) {
                 const tier = vel < 0.5 ? 0 : vel < 0.85 ? 1 : 2, sz = Math.round(size * 20) / 20;
                 add(cached('tk' + sz + '_' + tier, () => {
-                    const hard = tier / 2, len = Math.floor(SR * (sz < 0.8 ? 1.8 : 1.3)), o = new Float32Array(len), nl = bq('lp', 1100 + 800 * hard, 0.7), nb = bq('bp', 190 * sz, 1.0), ck = bq('hp', 2600, 0.7);
-                    const dF = Math.exp(-26 / SR), d1 = Math.exp(-(sz < 0.8 ? 2.5 : 3.4) / SR), d2 = Math.exp(-6.5 / SR), d3 = Math.exp(-48 / SR), d4 = Math.exp(-13 / SR), d5 = Math.exp(-170 / SR); let ph = 0, ph2 = 0, ph3 = 0, eF = 1, e1 = 1, e2 = 1, e3 = 1, e4 = 1, e5 = 1;
+                    const hard = tier / 2, len = Math.floor(SR * (sz < 0.8 ? 1.85 : 1.35)), o = new Float32Array(len);
+                    const nl = bq('lp', 950 + 750 * hard, 0.75), nb = bq('bp', 175 * sz, 1.3), dayan = bq('bp', 294 * sz, 3.2), ck = bq('hp', 2200, 0.7);
+                    const dF = Math.exp(-24 / SR), d1 = Math.exp(-(sz < 0.8 ? 2.4 : 3.2) / SR), d2 = Math.exp(-5.8 / SR), d3 = Math.exp(-44 / SR), d4 = Math.exp(-11 / SR), d5 = Math.exp(-150 / SR);
+                    let ph = 0, ph2 = 0, ph3 = 0, eF = 1, e1 = 1, e2 = 1, e3 = 1, e4 = 1, e5 = 1;
                     for (let i = 0; i < len; i++) {
-                        const f = (60 + 50 * eF) * sz; ph += f / SR; ph2 += f * 1.59 / SR; ph3 += f * 2.31 / SR; const n = nz();
-                        const y = Math.sin(TAU * ph) * e1 * 0.9 + 0.55 * Math.sin(TAU * ph2) * e2 + 0.3 * Math.sin(TAU * ph3) * e4 + nl.p(n) * e3 * (0.65 + 0.5 * hard) + nb.p(nz()) * e4 * 0.5 + ck.p(n) * e5 * (0.2 + 0.7 * hard);
+                        const ti = i / SR, ghe = 1 + 0.18 * Math.sin(Math.min(1, ti * 9) * Math.PI) * Math.exp(-ti * 4);
+                        const f = (58 + 46 * eF) * sz * ghe; ph += f / SR; ph2 += f * 1.50 / SR; ph3 += f * 2.00 / SR; const n = nz();
+                        const y = Math.sin(TAU * ph) * e1 * 0.92 + 0.52 * Math.sin(TAU * ph2) * e2 + 0.34 * Math.sin(TAU * ph3) * e4 + dayan.p(n) * e4 * 0.42 + nl.p(n) * e3 * (0.55 + 0.45 * hard) + nb.p(nz()) * e4 * 0.48 + ck.p(n) * e5 * (0.18 + 0.6 * hard);
                         o[i] = Math.tanh(y * 1.5) * (i > len - 1500 ? (len - i) / 1500 : 1); eF *= dF; e1 *= d1; e2 *= d2; e3 *= d3; e4 *= d4; e5 *= d5;
                     }
                     return o;
-                }), t, vel * 0.72, pan, send);
+                }), t, vel * 0.74, pan, send);
             }
-            function ka(t, vel, pan) { add(cached('ka', () => { const o = new Float32Array(Math.floor(SR * 0.13)), b = bq('bp', 1650, 2.2), b2 = bq('bp', 3900, 3), b3 = bq('hp', 6000, 0.7); for (let i = 0; i < o.length; i++) { const ti = i / SR, n = nz(); o[i] = (b.p(n) + b2.p(n) * 0.4 + b3.p(n) * 0.2 * Math.exp(-ti * 160)) * Math.exp(-ti * 55); } return o; }), t, vel * 1.1, pan, 0.18); }
+            // Crisp Dholak / Tabla Chat rim-slap
+            function ka(t, vel, pan) {
+                add(cached('ka', () => {
+                    const o = new Float32Array(Math.floor(SR * 0.15)), b = bq('bp', 1480, 2.4), b2 = bq('bp', 3150, 3.2), b3 = bq('hp', 5200, 0.7);
+                    let ph = 0;
+                    for (let i = 0; i < o.length; i++) {
+                        const ti = i / SR, n = nz(); ph += (392 + 180 * Math.exp(-ti * 90)) / SR;
+                        o[i] = (Math.sin(TAU * ph) * 0.45 * Math.exp(-ti * 38) + b.p(n) * 0.85 + b2.p(n) * 0.45 + b3.p(n) * 0.22 * Math.exp(-ti * 140)) * Math.exp(-ti * 48);
+                    }
+                    return o;
+                }), t, vel * 1.05, pan, 0.20);
+            }
+            // Classical Tabla Dayan (syahi iron-paste weighted membrane tuned to G3/D4/G4: hi=1 rings 'Na/Tin', hi=0 crisp 'Te/Ti')
             function shime(t, vel, pan, hi = 0) {
                 add(cached('sh' + hi, () => {
-                    const o = new Float32Array(Math.floor(SR * 0.22)), b = bq('bp', 820 + 260 * hi, 1.2), c = bq('hp', 3800, 0.7); let ph = 0;   // small tight drum
-                    for (let i = 0; i < o.length; i++) { const ti = i / SR; ph += (300 + 60 * hi) * (1 + 0.5 * Math.exp(-ti * 70)) / SR; const n = nz(); o[i] = Math.tanh((Math.sin(TAU * ph) * Math.exp(-ti * 24) + b.p(n) * 0.8 * Math.exp(-ti * 38) + c.p(n) * 0.5 * Math.exp(-ti * 120)) * 1.4) * (1 - sm(0.17, 0.22, ti)); } return o;
-                }), t, vel * 0.5, pan, 0.16);
+                    const dur = hi ? 0.34 : 0.18, o = new Float32Array(Math.floor(SR * dur)), b = bq('bp', 920 + 340 * hi, 1.6), c = bq('hp', 3400, 0.7);
+                    const f0 = hi ? 293.66 : 246.94;
+                    let ph1 = 0, ph2 = 0, ph3 = 0;
+                    for (let i = 0; i < o.length; i++) {
+                        const ti = i / SR, bend = 1 + (hi ? 0.28 : 0.45) * Math.exp(-ti * 85);
+                        ph1 += f0 * bend / SR; ph2 += f0 * 1.502 * bend / SR; ph3 += f0 * 2.004 * bend / SR;
+                        const n = nz(), syahi = hi ? (Math.sin(TAU * ph1) * 0.65 * Math.exp(-ti * 13) + Math.sin(TAU * ph2) * 0.45 * Math.exp(-ti * 17) + Math.sin(TAU * ph3) * 0.25 * Math.exp(-ti * 24)) : (Math.sin(TAU * ph1) * 0.7 * Math.exp(-ti * 28));
+                        o[i] = Math.tanh((syahi + b.p(n) * 0.65 * Math.exp(-ti * 42) + c.p(n) * 0.42 * Math.exp(-ti * 130)) * 1.45) * (1 - sm(dur - 0.04, dur, ti));
+                    }
+                    return o;
+                }), t, vel * 0.54, pan, 0.18);
             }
-            // bronze: a dense cloud of inharmonic partials (the high ones die first) inside a wash of noise, struck hard at the edge
+            // Kansa / Zill bronze clash cymbals
             function cym(t, vel, pan, long = 1) {
                 add(cached('cy' + long, () => {
                     const dur = long ? 1.9 : 0.09, n = Math.floor(SR * dur), o = new Float32Array(n), NP = long ? 96 : 40, k = long ? 2.6 : 60, h = bq('hp', 2400, 0.7), b1 = bq('bp', 3900, 0.5), b2 = bq('bp', 7600, 0.6);
@@ -133,8 +198,20 @@ import { Film } from './film.js';
                     for (let i = 0; i < n; i++) { const ti = i / SR, nn = nz(), e = Math.exp(-ti * k), e6 = Math.exp(-ti * k * 6); o[i] = h.p(o[i] * (1 + 0.8 * e6) + (b1.p(nn) * 0.62 + b2.p(nn) * 0.4) * (e * 0.95 + e6 * 0.8)) * 1.42 * Math.min(1, ti * 900) * (1 - sm(dur * 0.8, dur, ti)); } return o;
                 }), t, vel * 0.16, pan, 0.3);
             }
-            function block(t, vel, pan, f = 1150) { add(cached('wb' + f, () => { const o = new Float32Array(Math.floor(SR * 0.09)); for (let i = 0; i < o.length; i++) { const ti = i / SR; o[i] = (Math.sin(TAU * f * ti) + 0.5 * Math.sin(TAU * f * 2.63 * ti + 1)) * Math.exp(-ti * 70) * Math.min(1, ti * 2000); } return o; }), t, vel * 0.22, pan, 0.25); }
-            function gong(t, vel, dur = 9) {                                 // tam-tam: 22 beating partials, the high ones blooming late
+            // Bronze Kartal / Manjira hand-cymbals & Ghungroo ankle-bell chime
+            function block(t, vel, pan, f = 2680) {
+                add(cached('wb' + f, () => {
+                    const o = new Float32Array(Math.floor(SR * 0.14)), hp = bq('hp', 2200, 0.7);
+                    const f1 = f < 1800 ? f * 2.2 : f;
+                    for (let i = 0; i < o.length; i++) {
+                        const ti = i / SR, n = nz();
+                        o[i] = ((Math.sin(TAU * f1 * ti) + 0.65 * Math.sin(TAU * f1 * 1.618 * ti + 0.8) + 0.4 * Math.sin(TAU * f1 * 2.41 * ti + 1.9)) * Math.exp(-ti * 38) + hp.p(n) * 0.35 * Math.exp(-ti * 95)) * Math.min(1, ti * 2200);
+                    }
+                    return o;
+                }), t, vel * 0.20, pan, 0.28);
+            }
+            // Royal Kansa Gong & Temple Ghanta
+            function gong(t, vel, dur = 9) {
                 const g = cached('gong', () => {
                     const len = Math.floor(SR * 10), l = new Float32Array(len), r = new Float32Array(len);
                     for (let k = 0; k < 22; k++) {
@@ -147,10 +224,19 @@ import { Film } from './film.js';
                 const i0 = ix(t), len = Math.min(g[0].length, Math.floor(dur * SR), N - i0), f0 = Math.floor(Math.max(0.2, dur - 1.5) * SR), a = vel * 0.085;
                 for (let i = 0; i < len; i++) { const fd = i > f0 ? 1 - (i - f0) / (len - f0) : 1, j = i0 + i, l = g[0][i] * a * fd, r = g[1][i] * a * fd; L[j] += l; R[j] += r; S[j] += (l + r) * 0.35; }
             }
-            function bell(t, m, vel, pan, send = 0.5) { add(cached('be' + m, () => { const f = hz(m), idx = 1.6 * Math.min(1, 1700 / f), o = new Float32Array(Math.floor(SR * 2.4)); for (let i = 0; i < o.length; i++) { const ti = i / SR; o[i] = Math.sin(TAU * f * ti + Math.sin(TAU * f * 3.51 * ti) * idx * Math.exp(-ti * 5)) * Math.exp(-ti * 2.6) * (1 - sm(2.0, 2.4, ti)); } return o; }), t, vel * 0.19, pan, send); }
-            // a cloud of small bells struck at random over a held cluster
-            function bellCloud(t0, t1, ms, vel, rate, shape) { for (let t = t0 + rnd() / rate; t < t1; t += (0.3 + 1.4 * rnd()) / rate) bell(t, ms[(rnd() * ms.length) | 0] + (rnd() < 0.35 ? 12 : 0), vel * (0.45 + 0.55 * rnd()) * (shape ? shape((t - t0) / (t1 - t0)) : 1), 0.2 + 0.6 * rnd(), 0.6); }
-            // string bed: detuned saws under a slow low-pass. o: att, rel, trem (bow tremolo depth), from (level at the start, swelling to 1)
+            // Temple Ghanta Bronze Bell
+            function bell(t, m, vel, pan, send = 0.5) {
+                add(cached('be' + m, () => {
+                    const f = hz(m), idx = 1.65 * Math.min(1, 1700 / f), o = new Float32Array(Math.floor(SR * 2.5));
+                    for (let i = 0; i < o.length; i++) {
+                        const ti = i / SR;
+                        o[i] = (Math.sin(TAU * f * ti + Math.sin(TAU * f * 2.756 * ti) * idx * Math.exp(-ti * 4.8)) * 0.85 + 0.25 * Math.sin(TAU * f * 2.0 * ti) * Math.exp(-ti * 3.5)) * Math.exp(-ti * 2.4) * (1 - sm(2.1, 2.5, ti));
+                    }
+                    return o;
+                }), t, vel * 0.19, pan, send);
+            }
+            function bellCloud(t0, t1, ms, vel, rate, shape) { for (let t = t0 + rnd() / rate; t < t1; t += (0.3 + 1.4 * rnd()) / rate) bell(t, ms[(rnd() * ms.length) | 0] + (rnd() < 0.35 ? 12 : 0), vel * (0.45 + 0.55 * rnd()) * (shape ? shape(clamp((t - t0) / (t1 - t0), 0, 1)) : 1), 0.2 + 0.6 * rnd(), 0.6); }
+            // Harmonium / Surpeti / Bowed Dilruba Ensemble Pad
             function pad(t0, t1, ms, vel, bright = 1, o) {
                 const at = o && o.att || 0.9, rl = o && o.rel || 1.2, trem = o && o.trem || 0, from = o && o.from !== undefined ? o.from : 1;
                 const i0 = Math.max(0, ix(t0 - 0.05)), i1 = Math.min(N, ix(t1 + rl + 0.05)), fl = svf(), fr = svf(), nv = ms.length * 3, F = new Float64Array(nv), PH = new Float64Array(nv), PN = new Float64Array(nv);
@@ -165,7 +251,7 @@ import { Film } from './film.js';
                     l = fl.p(l, cut, 0.8) * g * aml; r = fr.p(r, cut, 0.8) * g * amr; L[i] += l; R[i] += r; S[i] += (l + r) * 0.35;
                 }
             }
-            // wordless voices: the same saws sung through an open vowel
+            // Classical Alaap Vocal Choir ("Aa" formant chorus)
             function choir(t0, t1, ms, vel, o) {
                 const at = o && o.att || 1.0, rl = o && o.rel || 0.3, from = o && o.from !== undefined ? o.from : 1, i0 = Math.max(0, ix(t0)), i1 = Math.min(N, ix(t1 + rl)), nv = ms.length * 2, F = new Float64Array(nv), PH = new Float64Array(nv), VP = new Float64Array(nv), VR = new Float64Array(nv);
                 for (let k = 0; k < nv; k++) { F[k] = hz(ms[k >> 1] + (k & 1 ? 0.09 : -0.08)) / SR; PH[k] = rnd(); VP[k] = rnd() * TAU; VR[k] = TAU * (4.8 + rnd() * 1.2) / SR; }
@@ -177,163 +263,221 @@ import { Film } from './film.js';
                     yl *= g; yr *= g; L[i] += yl + yr * 0.3; R[i] += yr + yl * 0.3; S[i] += (yl + yr) * 0.45;
                 }
             }
-            function stac(t, m, dur, vel, pan) {                             // low strings, short hard bow strokes
+            // Sarod / Low Bowed Esraj rhythmic staccato strokes
+            function stac(t, m, dur, vel, pan) {
                 add(cached('st' + m + '_' + Math.round(dur * 1000), () => {
-                    const f = hz(m), dt = f / SR, len = Math.floor((dur + 0.16) * SR), o = new Float32Array(len), fl = svf(); let ph = rnd(), ph2 = rnd(), cut = 3000;
+                    const f = hz(m), dt = f / SR, len = Math.floor((dur + 0.16) * SR), o = new Float32Array(len), fl = svf(), jw = bq('bp', Math.min(4200, f * 6), 3.0); let ph = rnd(), ph2 = rnd(), cut = 3200;
                     for (let i = 0; i < len; i++) {
-                        const ti = i / SR; if ((i & 15) === 0) cut = 320 + 2600 * Math.exp(-ti / 0.075); ph += dt; if (ph >= 1) ph -= 1; ph2 += dt * 2.004; if (ph2 >= 1) ph2 -= 1;
-                        o[i] = fl.p(saw(ph, dt) * 0.8 + saw(ph2, dt * 2.004) * 0.3 + nz() * 0.3 * Math.exp(-ti / 0.01), cut, 1.4) * Math.min(1, ti / 0.005) * Math.exp(-ti / (dur * 0.6)) * (1 - sm(dur, dur + 0.16, ti));
+                        const ti = i / SR; if ((i & 15) === 0) cut = 340 + 2800 * Math.exp(-ti / 0.075); ph += dt; if (ph >= 1) ph -= 1; ph2 += dt * 2.003; if (ph2 >= 1) ph2 -= 1;
+                        const raw = saw(ph, dt) * 0.8 + saw(ph2, dt * 2.003) * 0.32 + nz() * 0.32 * Math.exp(-ti / 0.01);
+                        o[i] = (fl.p(raw, cut, 1.45) + jw.p(raw * Math.abs(raw)) * 0.28) * Math.min(1, ti / 0.004) * Math.exp(-ti / (dur * 0.62)) * (1 - sm(dur, dur + 0.16, ti));
                     }
                     return o;
-                }), t, vel * 0.34, pan, 0.22);
+                }), t, vel * 0.35, pan, 0.22);
             }
+            // 4-String Mughal Tanpura Drone with Jawari harmonic shimmer
             function drone(t0, t1, m, vel, fi = 3, fo = 3) {
-                const f = hz(m), pr = [[1, 1], [2.003, 0.5], [3.0, 0.22]].map(p => { const w = TAU * f * p[0] / SR; return [Math.cos(w), Math.sin(w), 1, 0, p[1]]; }); let env = 0;
+                const f = hz(m), pr = [[1, 1], [1.498, 0.42], [2.002, 0.55], [3.004, 0.30], [4.01, 0.18], [5.02, 0.12]].map(p => { const w = TAU * f * p[0] / SR; return [Math.cos(w), Math.sin(w), 1, 0, p[1]]; });
+                let env = 0, jwL = 1, jwR = 1;
                 for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) {
-                    if ((i & 15) === 0) { const t = i / SR; env = sm(t0, t0 + fi, t) * (1 - sm(t1 - fo, t1, t)) * vel * (0.85 + 0.15 * Math.sin(t * 0.43)); }
-                    let y = 0; for (let k = 0; k < 3; k++) { const p = pr[k], x = p[2] * p[0] - p[3] * p[1]; p[3] = p[2] * p[1] + p[3] * p[0]; p[2] = x; y += p[3] * p[4]; }
-                    y *= env; L[i] += y * 0.5; R[i] += y * 0.5; S[i] += y * 0.12;
+                    if ((i & 15) === 0) {
+                        const t = i / SR, cyc = (t * 0.55) % 1;
+                        const strPluck = 0.82 + 0.28 * Math.exp(-cyc * 3.2) * sm(0, 0.04, cyc);
+                        env = sm(t0, t0 + fi, t) * (1 - sm(t1 - fo, t1, t)) * vel * strPluck;
+                        jwL = 0.85 + 0.15 * Math.sin(t * 1.1); jwR = 0.85 + 0.15 * Math.cos(t * 0.93);
+                    }
+                    let y = 0, hi = 0;
+                    for (let k = 0; k < 6; k++) {
+                        const p = pr[k], x = p[2] * p[0] - p[3] * p[1]; p[3] = p[2] * p[1] + p[3] * p[0]; p[2] = x;
+                        if (k < 3) y += p[3] * p[4]; else hi += p[3] * p[4];
+                    }
+                    const l = (y + hi * jwL) * env * 0.5, r = (y + hi * jwR) * env * 0.5;
+                    L[i] += l; R[i] += r; S[i] += (l + r) * 0.15;
                 }
             }
 
-            // ================= the piece: 80 bpm, bars of 3 s =================
+            // ================= The Score: 80 bpm, bars of 3 s =================
             const seq = (t, ns) => ns.map(n => [t + n[0], n[1], n[2], n[3]]);
-            const ERHU = { kind: 'erhu', gain: 0.60, pan: 0.42, send: 0.36 }, DIZI = { kind: 'dizi', gain: 0.40, pan: 0.64, send: 0.5, tr: 0 }, XIAO = { kind: 'xiao', gain: 0.34, pan: 0.60, send: 0.55, tr: 0 };
+            const SARANGI = { kind: 'sarangi', gain: 0.62, pan: 0.42, send: 0.38 };
+            const SHEHNAI = { kind: 'shehnai', gain: 0.42, pan: 0.62, send: 0.48, tr: 0 };
+            const BANSURI = { kind: 'bansuri', gain: 0.38, pan: 0.58, send: 0.55, tr: 0 };
+            const PUNGI = { kind: 'pungi', gain: 0.46, pan: 0.66, send: 0.44, tr: -12 };
             const chords = { Gm: [43, 50, 55, 58, 62], Eb: [39, 46, 55, 58, 63], F: [41, 48, 53, 57, 60], Dm: [38, 45, 53, 57, 62], Bb: [46, 53, 58, 62, 65], G: [43, 50, 55, 59, 62] };
-            const WM = [83, 90, 88, 86];                                     // the white motif: B F# E D
-            // the motif on glass with a bell on each attack (and the xiao an octave under it). r: [offset, dur] x 4
+            const WM = [83, 90, 88, 86];                                     // White Dragon celestial motif: B F# E D
+            const CM = [79, 80, 83, 84];                                     // Royal King Cobra (Rajgokhra) Bhairavi/Todi motif: G Ab B C
+            // White Dragon celestial motif (Bowed Glass + Temple Ghanta + Bansuri): used when White Dragon rescues Red at 57.2s & in Finale!
             function white(t, r, vel, o) {
-                const ms = o && o.ms || WM, bo = o && o.bell !== undefined ? o.bell : 1, pb = o && o.pan !== undefined ? o.pan : 0.66; ms.forEach((m, k) => { if (!(o && o.noGlass)) glass(t + r[k][0], r[k][1], m, vel, pb + 0.06 * (k & 1), 0.6); if (!(o && o.noBell)) bell(t + r[k][0], m + 12 * bo, vel * (bo > 1 ? 0.4 : 0.55), pb + 0.04 - 0.1 * k * (pb > 0.5 ? 1 : -1), 0.6); });
-                if (o && o.xiao) lead(ms.map((m, k) => [t + r[k][0], r[k][1], m - 12, 0.8]), Object.assign({}, XIAO, { gain: XIAO.gain * vel }));
+                const ms = o && o.ms || WM, bo = o && o.bell !== undefined ? o.bell : 1, pb = o && o.pan !== undefined ? o.pan : 0.66;
+                ms.forEach((m, k) => {
+                    if (!(o && o.noGlass)) glass(t + r[k][0], r[k][1], m, vel, pb + 0.06 * (k & 1), 0.6);
+                    if (!(o && o.noBell)) bell(t + r[k][0], m + 12 * bo, vel * (bo > 1 ? 0.4 : 0.55), pb + 0.04 - 0.1 * k * (pb > 0.5 ? 1 : -1), 0.6);
+                });
+                if (o && o.xiao) lead(ms.map((m, k) => [t + r[k][0], r[k][1], m - 12, 0.82]), Object.assign({}, BANSURI, { gain: BANSURI.gain * vel }));
             }
-            const sideW = t => clamp(0.5 + 0.8 * (panW(t) - 0.5), 0.3, 0.72);      // where the white loong's instruments sit: its side of the frame at that moment
+            // Royal King Cobra (Ophiophagus hannah) hypnotic Been/Pungi & Sitar/Ghungroo motif (27.5s-57.0s)
+            function cobraMotif(t, r, vel, o) {
+                const ms = o && o.ms || CM, pb = o && o.pan !== undefined ? o.pan : sideS(t + 0.5);
+                lead(ms.map((m, k) => [t + r[k][0], r[k][1], m, 0.92]), Object.assign({}, PUNGI, { gain: PUNGI.gain * vel, pan: pb }));
+                ms.forEach((m, k) => {
+                    pluck(t + r[k][0], m - 12, vel * 0.42, clamp(pb - 0.08 + 0.05 * k, 0.15, 0.85), 0.8, 0.35);
+                    if (k % 2 === 0) block(t + r[k][0], vel * 0.55, clamp(pb + 0.06, 0.15, 0.85), 3100 + 400 * k);
+                });
+            }
+            const sideW = t => clamp(0.5 + 0.8 * (panW(t) - 0.5), 0.3, 0.72);
+            const sideS = t => clamp(0.5 + 0.8 * (panS(t) - 0.5), 0.3, 0.75);
+            // Mughal Naqqara, Pakhawaj & Tabla Theka Groove
             const groove = (t, dense, vel, fill) => {
-                taiko(t, vel, 0.5, 1); taiko(t + B * 1.5, vel * 0.78, 0.42, 1.1); taiko(t + B * 3, vel * 0.86, 0.58, 1.05); ka(t + B, 0.5 * vel, 0.3); ka(t + B * 2.5, 0.55 * vel, 0.7);
-                if (dense) { taiko(t + B * 2.25, vel * 0.5, 0.45, 1.25); ka(t + B * 0.5, 0.4 * vel, 0.65); ka(t + B * 3.5, 0.5 * vel, 0.35); ka(t + B * 3.75, 0.6 * vel, 0.6); for (let k = 0; k < 8; k++) shime(t + k * B / 2, (k & 1 ? 0.3 : 0.45) * vel, k & 1 ? 0.7 : 0.32, k & 1); }
-                if (fill) for (let k = 0; k < 4; k++) taiko(t + B * 3 + B * 0.25 * k, vel * (0.4 + 0.12 * k), 0.4 + 0.07 * k, 1.3 - 0.1 * k);
+                taiko(t, vel, 0.5, 1); taiko(t + B * 1.5, vel * 0.78, 0.42, 1.1); taiko(t + B * 3, vel * 0.86, 0.58, 1.05); ka(t + B, 0.52 * vel, 0.3); ka(t + B * 2.5, 0.56 * vel, 0.7);
+                for (let k = 0; k < 4; k++) shime(t + k * B + B * 0.5, 0.38 * vel, k & 1 ? 0.68 : 0.32, 1);
+                if (dense) {
+                    taiko(t + B * 2.25, vel * 0.52, 0.45, 1.25); ka(t + B * 0.5, 0.42 * vel, 0.65); ka(t + B * 3.5, 0.52 * vel, 0.35); ka(t + B * 3.75, 0.62 * vel, 0.6);
+                    for (let k = 0; k < 8; k++) shime(t + k * B / 2, (k & 1 ? 0.34 : 0.50) * vel, k & 1 ? 0.7 : 0.32, (k % 3 === 0) ? 1 : 0);
+                }
+                if (fill) for (let k = 0; k < 4; k++) {
+                    taiko(t + B * 3 + B * 0.25 * k, vel * (0.42 + 0.12 * k), 0.4 + 0.07 * k, 1.3 - 0.1 * k);
+                    shime(t + B * 3 + B * 0.25 * k, vel * 0.55, 0.65 - 0.08 * k, k === 3 ? 1 : 0);
+                }
             };
-            const bass = (t, m, vel) => { pluck(t, m, vel, 0.5, 0.35, 0.2); pluck(t + B * 1.5, m, vel * 0.7, 0.46, 0.35, 0.2); pluck(t + B * 2, m + 7, vel * 0.8, 0.54, 0.35, 0.2); pluck(t + B * 3, m, vel * 0.75, 0.5, 0.35, 0.2); };
-            const strum = (t, c, vel, up = 12) => c.forEach((m, i) => pluck(t + i * 0.055, m + up, vel, 0.3 + i * 0.1, 0.7));
-            const roll = (t0, t1, step, v0, v1, s0, s1) => { const n = Math.round((t1 - t0) / step); for (let k = 0; k < n; k++) { const u = k / n; if (t0 + k * step > t1 - q + 0.001) break; taiko(t0 + k * step, (v0 + (v1 - v0) * u * u) * (k % 4 === 0 ? 1.15 : 1), k & 1 ? 0.62 : 0.38, s0 + (s1 - s0) * u + (k & 1 ? 0.1 : 0)); } };
+            const bass = (t, m, vel) => { pluck(t, m, vel, 0.5, 0.4, 0.22); pluck(t + B * 1.5, m, vel * 0.72, 0.46, 0.4, 0.22); pluck(t + B * 2, m + 7, vel * 0.82, 0.54, 0.5, 0.22); pluck(t + B * 3, m, vel * 0.76, 0.5, 0.4, 0.22); };
+            const strum = (t, c, vel, up = 12) => c.forEach((m, i) => pluck(t + i * 0.052, m + up, vel, 0.28 + i * 0.1, 0.8));
+            const roll = (t0, t1, step, v0, v1, s0, s1) => { const n = Math.round((t1 - t0) / step); for (let k = 0; k < n; k++) { const u = k / n; if (t0 + k * step > t1 - q + 0.001) break; taiko(t0 + k * step, (v0 + (v1 - v0) * u * u) * (k % 4 === 0 ? 1.15 : 1), k & 1 ? 0.62 : 0.38, s0 + (s1 - s0) * u + (k & 1 ? 0.1 : 0)); if (k & 1) shime(t0 + k * step, (v0 + (v1 - v0) * u) * 0.65, k & 2 ? 0.68 : 0.32, k % 4 === 1 ? 1 : 0); } };
 
-            // ---- dawn (0 to EMERGE): wind, water, eave bells, guzheng, a low drone; the erhu states the red theme quietly
-            drone(0, R1 + 0.2, 31, 0.07, 3, 0.6); drone(0, R1 + 0.2, 43, 0.065, 3, 0.6); drone(tE + 1, R0, 38, 0.04, 3, 1);
+            // ---- Dawn over Shahi Mahal & Bengali Ghats (0 to EMERGE): Tanpura drone, Bansuri & Sarangi Alaap, Sitar Jawari arpeggios, Temple Ghanta ----
+            drone(0, R1 + 0.2, 31, 0.072, 3, 0.6); drone(0, R1 + 0.2, 43, 0.068, 3, 0.6); drone(tE + 1, R0, 38, 0.042, 3, 1);
             pad(0.5, tE, [43, 50, 62], 0.62, 0.6);
-            lead(seq(tE - 6, [[0, 1.5, 79, 0.62], [1.5, 0.375, 77, 0.5], [1.875, 0.375, 74, 0.5], [2.25, 0.75, 77, 0.55], [3, 1.5, 74, 0.6], [4.5, 0.375, 72, 0.5], [4.875, 0.375, 70, 0.5], [5.25, 0.7, 72, 0.5]]), Object.assign({}, ERHU, { gain: 0.54, send: 0.45, pan: 0.5 }));
-            [82, 79, 77, 74, 72, 70, 67, 65, 62].forEach((m, i) => pluck(tE - 7.8 + i * 0.085, m, 0.42 - i * 0.02, 0.25 + i * 0.06, 0.6));
-            [55, 62, 67].forEach((m, i) => pluck(tE - 4.5 + i * 0.75, m, 0.34, 0.6 - i * 0.12, 0.5));
-            [55, 58, 62, 65, 67, 70, 74, 77].forEach((m, i) => pluck(tE - 0.72 + i * 0.085, m, 0.34 + i * 0.025, 0.7 - i * 0.06, 0.6));
+            lead(seq(tE - 6, [[0, 1.5, 79, 0.64], [1.5, 0.375, 78, 0.52], [1.875, 0.375, 74, 0.52], [2.25, 0.75, 77, 0.58], [3, 1.5, 74, 0.62], [4.5, 0.375, 72, 0.52], [4.875, 0.375, 70, 0.52], [5.25, 0.7, 72, 0.54]]), Object.assign({}, SARANGI, { gain: 0.56, send: 0.46, pan: 0.46 }));
+            lead(seq(tE - 6, [[0.375, 1.125, 67, 0.42], [2.25, 0.75, 65, 0.40], [3.375, 1.125, 62, 0.44], [5.25, 0.7, 60, 0.38]]), Object.assign({}, BANSURI, { gain: 0.32, send: 0.55, pan: 0.58 }));
+            [82, 79, 78, 74, 72, 70, 67, 66, 62].forEach((m, i) => pluck(tE - 7.8 + i * 0.085, m, 0.44 - i * 0.02, 0.25 + i * 0.06, 0.7));
+            [55, 62, 67].forEach((m, i) => pluck(tE - 4.5 + i * 0.75, m, 0.36, 0.6 - i * 0.12, 0.7));
+            [55, 58, 62, 66, 67, 70, 74, 78].forEach((m, i) => pluck(tE - 0.72 + i * 0.085, m, 0.36 + i * 0.025, 0.7 - i * 0.06, 0.8));
             for (const [dt, m, p] of [[-8.1, 86, 0.25], [-6.4, 91, 0.7], [-3.7, 84, 0.35], [-1.6, 89, 0.62]]) bell(tE + dt, m, 0.5, p);
-            // ---- EMERGE: a deep drum under the growl, the bed swells, drums gather into the downbeat
-            taiko(tE, 1.1, 0.5, 0.7); strum(tE + 0.1875, chords.Gm, 0.36, 0); strum(tE + 3, chords.Eb, 0.4);
+
+            // ---- EMERGE (9.0s): Naqqara kettledrum under the Crimson Dragon's awakening, Sitar chords, Sarangi climbing ----
+            taiko(tE, 1.1, 0.5, 0.7); strum(tE + 0.1875, chords.Gm, 0.38, 0); strum(tE + 3, chords.Eb, 0.42);
             pad(tE, tE + 3, [31, 43, 50, 55, 58], 0.8, 0.7); pad(tE + 3, tD, [39, 46, 51, 55, 58, 63], 0.95, 1.0, { from: 0.6 });
-            lead(seq(tD - 3, [[0, 0.75, 70, 0.62], [0.75, 0.75, 72, 0.7], [1.5, 0.75, 74, 0.8], [2.25, 0.72, 77, 0.9]]), Object.assign({}, ERHU, { pan: 0.5 }));
-            for (let i = 0; i < 14; i++) { const u = i / 14; taiko(tD - 3 + 3 * (1 - Math.pow(1 - u, 1.7)), 0.18 + 0.62 * u * u, 0.4 + 0.2 * (i % 2), 1.0 + 0.2 * (i % 2)); }
+            lead(seq(tD - 3, [[0, 0.75, 70, 0.64], [0.75, 0.75, 72, 0.72], [1.5, 0.75, 74, 0.82], [2.25, 0.72, 78, 0.92]]), Object.assign({}, SARANGI, { pan: 0.5 }));
+            for (let i = 0; i < 14; i++) { const u = i / 14, t = tD - 3 + 3 * (1 - Math.pow(1 - u, 1.7)); taiko(t, 0.18 + 0.62 * u * u, 0.4 + 0.2 * (i % 2), 1.0 + 0.2 * (i % 2)); if (i % 2 === 1) shime(t, 0.25 + 0.45 * u, 0.35 + 0.3 * (i & 1), i % 3 === 0 ? 1 : 0); }
             for (const [dt, m, p] of [[1.6, 79, 0.2], [2.1, 84, 0.3], [4.4, 86, 0.72]]) bell(tE + dt, m, 0.42, p);
-            // ---- DRUMS: the theme in full on erhu, dizi answering over the long notes; then the line climbs through the inhale
+
+            // ---- DRUMS (15.0s): Royal Mughal Darbar theme on Sarangi & Shahi Shehnai over Tabla/Pakhawaj groove; Sitar Jhala into CHARGE (21.4s) ----
             gong(tD, 0.9, 8); taiko(tD, 1.1, 0.5, 0.8); cym(tD, 0.8, 0.6);
-            ['Gm', 'Bb'].forEach((c, k) => { const t = tD + 3 * k; pad(t, t + 3, chords[c], 1.0, 1.0); strum(t, chords[c], 0.42); pluck(t + B * 2, chords[c][2] + 12, 0.3, 0.7, 0.45); pluck(t + B * 3, chords[c][4] + 12, 0.3, 0.3, 0.45); groove(t, k === 1, 0.92, k === 1); bass(t, chords[c][0], 0.8); });
-            lead(seq(tD, [[0, 1.5, 79, 1.0], [1.5, 0.375, 77, 0.85], [1.875, 0.375, 74, 0.85], [2.25, 0.75, 77, 0.9], [3, 1.5, 74, 0.95], [4.5, 0.375, 72, 0.8], [4.875, 0.375, 70, 0.8], [5.25, 0.75, 72, 0.85],
-            [6, 0.75, 70, 0.85], [6.75, 0.75, 72, 0.88], [7.5, 0.75, 74, 0.92], [8.25, 0.72, 77, 0.98]]), Object.assign({}, ERHU, { pan: 0.5 }));      // red is alone in the middle of the frame: its voice sits in the middle
-            lead(seq(tD, [[0.75, 0.375, 79, 0.5], [1.125, 0.375, 82, 0.55], [1.5, 1.35, 86, 0.6], [3.75, 0.1875, 82, 0.5], [3.9375, 0.1875, 84, 0.52], [4.125, 0.375, 86, 0.58], [4.5, 1.35, 89, 0.62],
-            [6, 0.75, 82, 0.5], [6.75, 0.75, 84, 0.54], [7.5, 0.75, 86, 0.6], [8.25, 0.72, 89, 0.66]]), Object.assign({}, DIZI, { pan: 0.56 }));
+            ['Gm', 'Bb'].forEach((c, k) => { const t = tD + 3 * k; pad(t, t + 3, chords[c], 1.0, 1.0); strum(t, chords[c], 0.44); pluck(t + B * 2, chords[c][2] + 12, 0.34, 0.7, 0.7); pluck(t + B * 3, chords[c][4] + 12, 0.34, 0.3, 0.7); groove(t, k === 1, 0.92, k === 1); bass(t, chords[c][0], 0.82); });
+            lead(seq(tD, [[0, 1.5, 79, 1.0], [1.5, 0.375, 78, 0.86], [1.875, 0.375, 74, 0.86], [2.25, 0.75, 77, 0.92], [3, 1.5, 74, 0.96], [4.5, 0.375, 72, 0.82], [4.875, 0.375, 70, 0.82], [5.25, 0.75, 72, 0.86],
+            [6, 0.75, 70, 0.86], [6.75, 0.75, 72, 0.89], [7.5, 0.75, 74, 0.94], [8.25, 0.72, 78, 0.99]]), Object.assign({}, SARANGI, { pan: 0.48 }));
+            lead(seq(tD, [[0.75, 0.375, 79, 0.52], [1.125, 0.375, 82, 0.56], [1.5, 1.35, 86, 0.62], [3.75, 0.1875, 82, 0.52], [3.9375, 0.1875, 84, 0.54], [4.125, 0.375, 86, 0.60], [4.5, 1.35, 89, 0.64],
+            [6, 0.75, 82, 0.52], [6.75, 0.75, 84, 0.56], [7.5, 0.75, 86, 0.62], [8.25, 0.72, 90, 0.68]]), Object.assign({}, SHEHNAI, { pan: 0.56 }));
             taiko(tD + 6, 0.8, 0.5, 1); pad(tD + 6, tC, chords.F, 0.8, 1.0, { rel: 0.5 });
             pad(tC - 0.4, R0, [43, 50, 57, 62, 69], 0.9, 1.4, { rel: 0.4 });
-            for (const [dt, v] of [[2.25, 0.4], [1.5, 0.46], [0.9375, 0.52], [0.5625, 0.6], [0.375, 0.68], [0.1875, 0.76]]) taiko(R0 - dt, v, 0.5, 0.85);      // heartbeat quickening on the grid, a breath, then the roar
-            for (let t = tC, k = 0; t < R0 - q - 0.01; t += q / 2, k++) { const u = (t - tC) / (R0 - tC); pluck(t, k & 1 ? 86 : 74, 0.14 + 0.36 * u, 0.6 + 0.1 * (k & 1), 0.75); }
-            // ---- ROAR: gong, sub hit, a held low cluster that dies with the roar
+            for (const [dt, v] of [[2.25, 0.4], [1.5, 0.46], [0.9375, 0.52], [0.5625, 0.6], [0.375, 0.68], [0.1875, 0.76]]) taiko(R0 - dt, v, 0.5, 0.85);
+            for (let t = tC, k = 0; t < R0 - q - 0.01; t += q / 2, k++) { const u = (t - tC) / (R0 - tC); pluck(t, k & 1 ? 86 : 74, 0.16 + 0.38 * u, 0.58 + 0.12 * (k & 1), 0.9); }
+
+            // ---- ROAR (24.0s-27.0s): Kansa gong, Naqqara sub impact, low raga cluster ----
             gong(R0, 1.25, R1 - R0 + 0.3); taiko(R0, 1.25, 0.5, 0.7); taiko(R0 + 0.09, 0.9, 0.35, 0.95); taiko(R0 + 0.17, 0.8, 0.65, 1.1); cym(R0, 1.0, 0.4);
             pad(R0, R1 - 0.5, [31, 38, 43, 50, 58, 62], 1.1, 0.7, { rel: 0.5 });
-            // ---- OMEN: silence, thunder (foley), and a new colour: glass and bells high above the red valley
-            drone(STR[0] + 0.6, CUT, 31, 0.07, 2.5, 0.03); drone(tDe, tF, 43, 0.05, 2, 1.5);
-            bellCloud(STR[Math.min(1, STR.length - 1)] + 0.3, tDe, [83, 90, 95], 0.2, 3.0, u => 0.4 + 0.6 * u);
-            glass(tDe - 2 * B, B, WM[0], 0.55); glass(tDe - B, B * 1.4, WM[1], 0.65); lead([[tDe - 2 * B, B, WM[0] - 12, 0.6], [tDe - B, B - 0.1, WM[1] - 12, 0.7]], Object.assign({}, XIAO, { gain: 0.26 }));
-            // ---- DESCENT: the white motif over tremolo strings, taiko rolls building in the last bar
-            white(tDe, [[0, 0.75], [0.75, 1.5], [2.25, 0.75], [3, 2.2]], 1.0, { xiao: 1 });
-            white(tDe + 4.5, [[0, 0.375], [0.375, 0.375], [0.75, 0.375], [1.125, 0.5]], 0.8, { bell: 2, noGlass: 1 }); glass(tDe + 4.5, 1.4, WM[3], 0.5);
-            pad(tDe, tDe + 3, [55, 62, 66, 71], 0.8, 1.3, { trem: 0.55 }); pad(tDe + 3, tF, [43, 55, 58, 62, 66], 1.0, 1.6, { trem: 0.6, from: 0.6, rel: 0.5 });
-            bellCloud(tDe, tF, [83, 86, 90, 95], 0.26, 2.2);
-            roll(tF - 3, tF - 0.75, q, 0.15, 0.5, 1.1, 0.95); roll(tF - 0.75, tF, q / 2, 0.45, 0.72, 0.95, 0.8); taiko(tF, 1.0, 0.5, 0.7); cym(tF, 0.6, 0.6);
-            // ---- FACEOFF: heartbeat drum; erhu low and tense against the glass
-            for (let k = 0; k < 4; k++) { taiko(tF + k * B + (k ? 0 : 0.14), k ? 0.56 : 0.36, 0.5, 0.9); if (k) taiko(tF + k * B + 0.15, 0.36, 0.5, 0.95); }
-            pad(tF, W0, [43, 49, 55, 58, 66], 1.0, 1.5, { trem: 0.65, rel: 0.25 });
-            lead(seq(tF, [[0.1, 0.6, 67, 0.85], [0.75, 0.375, 65, 0.75], [1.125, 0.36, 62, 0.75], [2.25, 0.7, 62, 0.8]]), Object.assign({}, ERHU, { pont: 0.8, gain: 0.55 }));
-            white(tF + 1.5, [[0, 0.375], [0.375, 0.45]], 0.8, { ms: [WM[0], WM[1]] });
-            white(tF + 2.4375, [[0, 0.1875], [0.1875, 0.3]], 0.7, { ms: [WM[2], WM[3]] });
-            // ---- WROAR: the white roars over a glass cluster; a gathered pickup into the first collision
-            taiko(W0, 0.9, 0.5, 0.7); cym(W0, 0.9, 0.62);[83, 86, 90, 95].forEach((m, i) => { glass(W0, W1 - W0 - 0.4, m, 0.5, 0.5 + 0.1 * i); bell(W0 + i * 0.03, m + 12, 0.5, 0.75 - 0.12 * i); });
-            [[4, 0.4], [3, 0.5], [2, 0.62], [1.5, 0.5], [1, 0.75]].forEach(([k, v], i) => taiko(tC1 - k * q, v, 0.4 + 0.2 * (i & 1), 1.1 - 0.05 * i));
-            // ---- CLASH1: the fight. Sixteenth-note taiko and a low string ostinato; red fragments on erhu, the white motif on dizi and glass, rising bar by bar
-            const OST = [0, 0, 3, 0, 0, 0, 5, 0, 0, 0, 7, 5, 3, 0, -2, 0], DRUMS = 1.3;      // DRUMS: the fight's drums stand in front of its strings
+
+            // ---- OMEN (27.0s) & DESCENT (30.0s-36.0s): Royal King Cobra (রাজগোখরা) emerges from the lake & climbs the Mughal ghats! ----
+            drone(STR[0] + 0.6, CUT, 31, 0.072, 2.5, 0.03); drone(tDe, tF, 43, 0.055, 2, 1.5);
+            bellCloud(STR[Math.min(1, STR.length - 1)] + 0.3, tDe, [80, 83, 86], 0.18, 2.8, u => 0.4 + 0.6 * u);
+            lead([[tDe - 2 * B, B * 0.95, 80, 0.72], [tDe - B, B * 0.45, 83, 0.78], [tDe - B * 0.55, B * 0.5, 84, 0.84]], Object.assign({}, PUNGI, { gain: 0.38, pan: sideS(tDe - B) }));
+            pluck(tDe - 2 * B, 68, 0.45, 0.64, 0.8); pluck(tDe - B, 71, 0.5, 0.68, 0.8);
+            lead(seq(tDe, [
+                [0, 0.75, 79, 0.92], [0.75, 0.375, 80, 0.88], [1.125, 0.375, 83, 0.92], [1.5, 0.75, 84, 0.96], [2.25, 0.75, 83, 0.90],
+                [3.0, 0.5625, 80, 0.88], [3.5625, 0.1875, 83, 0.86], [3.75, 0.75, 79, 0.94], [4.5, 0.375, 78, 0.85], [4.875, 0.375, 80, 0.88], [5.25, 0.7, 79, 0.95]
+            ]), Object.assign({}, PUNGI, { gain: 0.48, pan: 0.64 }));
+            lead(seq(tDe, [[1.5, 0.75, 72, 0.65], [2.25, 0.75, 71, 0.68], [4.5, 0.75, 68, 0.72], [5.25, 0.7, 67, 0.76]]), Object.assign({}, SARANGI, { gain: 0.46, pan: 0.38 }));
+            [67, 68, 71, 72, 74, 75, 78, 79].forEach((m, i) => pluck(tDe + 0.375 * i, m, 0.38, 0.55 + 0.03 * (i & 3), 0.8));
+            pad(tDe, tDe + 3, [43, 55, 56, 62, 67], 0.8, 1.3, { trem: 0.55 }); pad(tDe + 3, tF, [43, 55, 56, 60, 66], 1.0, 1.6, { trem: 0.6, from: 0.6, rel: 0.5 });
+            roll(tF - 3, tF - 0.75, q, 0.16, 0.52, 1.1, 0.95); roll(tF - 0.75, tF, q / 2, 0.46, 0.74, 0.95, 0.8); taiko(tF, 1.0, 0.5, 0.7); cym(tF, 0.6, 0.6);
+
+            // ---- FACEOFF (36.0s-39.0s): Heartbeat Naqqara; tense Sarangi (Red Dragon) vs. swaying Pungi/Been (Towering Hooded King Cobra) ----
+            for (let k = 0; k < 4; k++) { taiko(tF + k * B + (k ? 0 : 0.14), k ? 0.58 : 0.38, 0.5, 0.9); if (k) taiko(tF + k * B + 0.15, 0.38, 0.5, 0.95); }
+            pad(tF, W0, [43, 49, 55, 56, 66], 1.0, 1.5, { trem: 0.65, rel: 0.25 });
+            lead(seq(tF, [[0.1, 0.6, 67, 0.86], [0.75, 0.375, 66, 0.78], [1.125, 0.36, 62, 0.78], [2.25, 0.7, 62, 0.82]]), Object.assign({}, SARANGI, { pont: 0.8, gain: 0.58, pan: 0.36 }));
+            cobraMotif(tF + 1.5, [[0, 0.375], [0.375, 0.45]], 0.88, { ms: [CM[0], CM[1]], pan: sideS(tF + 1.7) });
+            cobraMotif(tF + 2.4375, [[0, 0.1875], [0.1875, 0.3]], 0.82, { ms: [CM[2], CM[3]], pan: sideS(tF + 2.6) });
+
+            // ---- WROAR (39.0s-41.2s): King Cobra Whip-Strike (ছোবল) & Fang Bite! Piercing Pungi/Been trill + Sitar/Tabla burst ----
+            taiko(W0, 0.95, 0.5, 0.7); cym(W0, 0.9, 0.62);
+            lead(seq(W0, [[0, 0.25, 84, 1.0], [0.25, 0.25, 83, 0.95], [0.5, 0.25, 80, 0.95], [0.75, 0.5, 83, 0.98], [1.25, 0.35, 80, 0.92], [1.6, 0.5, 79, 0.95]]), Object.assign({}, PUNGI, { gain: 0.52, pan: sideS(W0 + 0.4) }));
+            [67, 68, 71, 72, 75, 78, 79, 83].forEach((m, i) => pluck(W0 + i * 0.045, m, 0.48, 0.72 - 0.05 * i, 0.9));
+            [[4, 0.42], [3, 0.52], [2, 0.64], [1.5, 0.52], [1, 0.78]].forEach(([k, v], i) => { taiko(tC1 - k * q, v, 0.4 + 0.2 * (i & 1), 1.1 - 0.05 * i); shime(tC1 - k * q, v * 0.7, 0.6 - 0.2 * (i & 1), 1); });
+
+            // ---- CLASH1 (42.0s-51.0s): Dragon vs. King Cobra battle! 16th-note Tabla Rela, Pakhawaj, Sarod ostinato, Sarangi vs. Pungi/Shehnai ----
+            const OST = [0, 0, 1, 0, 0, 0, 5, 0, 0, 0, 7, 5, 1, 0, -1, 0], DRUMS = 1.3;
             const fightBar = (t, root, v, n16 = 16) => {
                 for (let s = 0; s < n16; s++) {
-                    const ts = t + s * q, j = s & 3, acc = j === 0 ? 1 : j === 2 ? 0.7 : 0.5;
-                    stac(ts, root + OST[s], q * 0.9, (0.55 + 0.4 * acc) * v, 0.4); stac(ts, root + OST[s] + 12, q * 0.9, (0.3 + 0.25 * acc) * v, 0.62);
-                    shime(ts, (0.3 + 0.5 * acc) * v * DRUMS, s & 1 ? 0.68 : 0.34, s & 1);
-                    if (j === 0) taiko(ts, 0.95 * v * DRUMS, 0.5, 0.85); else if (j === 2) taiko(ts, 0.5 * v * DRUMS, 0.4, 1.1); else if (j === 3) taiko(ts, 0.62 * v * DRUMS, 0.6, 1.0);
+                    const ts = t + s * q, j = s & 3, acc = j === 0 ? 1 : j === 2 ? 0.72 : 0.52;
+                    stac(ts, root + OST[s], q * 0.9, (0.55 + 0.4 * acc) * v, 0.38); stac(ts, root + OST[s] + 12, q * 0.9, (0.32 + 0.25 * acc) * v, 0.62);
+                    shime(ts, (0.34 + 0.52 * acc) * v * DRUMS, s & 1 ? 0.68 : 0.34, (j === 0 || j === 2) ? 1 : 0);
+                    if (j === 0) taiko(ts, 0.95 * v * DRUMS, 0.5, 0.85); else if (j === 2) taiko(ts, 0.52 * v * DRUMS, 0.4, 1.1); else if (j === 3) taiko(ts, 0.64 * v * DRUMS, 0.6, 1.0);
                     if (j === 2) cym(ts, 0.55 * v, 0.7, 0);
                 }
-                ka(t + B * 1.5, 0.6 * v * DRUMS, 0.3); ka(t + B * 3.5, 0.65 * v * DRUMS, 0.7); block(t + B * 0.75, 0.7 * v, 0.25); block(t + B * 2.75, 0.7 * v, 0.75, 1380);
+                ka(t + B * 1.5, 0.62 * v * DRUMS, 0.3); ka(t + B * 3.5, 0.66 * v * DRUMS, 0.7); block(t + B * 0.75, 0.7 * v, 0.25, 2750); block(t + B * 2.75, 0.7 * v, 0.75, 3250);
             };
-            const RED = [[0, 0.375, 79, 1.0], [0.375, 0.1875, 77, 0.9], [0.5625, 0.1875, 74, 0.9], [0.75, 0.62, 77, 0.95]], WQ = [[0, 0.1875], [0.1875, 0.5625], [0.75, 0.1875], [0.9375, 0.5]];
+            const RED = [[0, 0.375, 79, 1.0], [0.375, 0.1875, 78, 0.9], [0.5625, 0.1875, 74, 0.9], [0.75, 0.62, 77, 0.95]], WQ = [[0, 0.1875], [0.1875, 0.5625], [0.75, 0.1875], [0.9375, 0.5]];
             gong(tC1, 0.7, 5); taiko(tC1, 0.9, 0.5, 0.75); cym(tC1, 0.9, 0.5);
             [[43, 0], [46, 3], [48, 7]].forEach(([root, up], k) => {
                 const t = tC1 + 3 * k, v = 0.8 + 0.1 * k;
                 fightBar(t, root, v, k === 2 ? 12 : 16); pad(t, t + 3, [root - 12, root, root + 7, root + 12], 0.85 + 0.1 * k, 1.3, { att: 0.15, rel: 0.4 }); if (k) cym(t, 0.7, 0.4);
-                lead(RED.map(n => [t + n[0], n[1], n[2] + up, n[3]]), Object.assign({}, ERHU, { gain: 0.66, pont: 0.25 }));
+                lead(RED.map(n => [t + n[0], n[1], n[2] + up, n[3]]), Object.assign({}, SARANGI, { gain: 0.68, pont: 0.28, pan: 0.38 }));
             });
-            white(tC1 + 1.5, WQ, 0.9, { pan: sideW(tC1 + 2) }); lead(seq(tC1 + 1.5, WQ.map((r, k) => [r[0], r[1], WM[k], 0.85])), Object.assign({}, DIZI, { pan: sideW(tC1 + 2) }));
-            white(tFi + 0.75, WQ.slice(0, 2), 0.9, { ms: [WM[0], WM[1]], pan: sideW(tFi + 1) }); lead(seq(tFi + 0.75, [[0, 0.1875, WM[0], 0.85], [0.1875, 0.5, WM[1], 0.9]]), Object.assign({}, DIZI, { pan: sideW(tFi + 1) }));
-            white(tBo, WQ, 1.0); white(tBo, WQ, 0.9, { bell: 2, noGlass: 1 }); lead(seq(tBo, WQ.map((r, k) => [r[0], r[1], WM[k], 1.0])), Object.assign({}, DIZI, { gain: 0.48 }));
+            cobraMotif(tC1 + 1.5, WQ, 0.92, { pan: sideS(tC1 + 2) }); lead(seq(tC1 + 1.5, WQ.map((r, k) => [r[0], r[1], CM[k], 0.85])), Object.assign({}, SHEHNAI, { pan: sideS(tC1 + 2) }));
+            cobraMotif(tFi + 0.75, WQ.slice(0, 2), 0.92, { ms: [CM[0], CM[1]], pan: sideS(tFi + 1) });
+            cobraMotif(tBo, WQ, 1.0, { pan: sideS(tBo + 0.2) }); lead(seq(tBo, WQ.map((r, k) => [r[0], r[1], CM[k] + 12, 0.95])), Object.assign({}, SHEHNAI, { gain: 0.46, pan: sideS(tBo + 0.2) }));
             roll(tC2 - B, tC2, q / 2, 0.4, 0.7, 1.1, 0.8);
-            // ---- CLASH2: locked together and falling: a continuous roll, the ostinato sinking, both voices tangled
+
+            // ---- CLASH2 (51.0s-57.0s): King Cobra constriction coil around Red! Continuous Tabla/Naqqara roll, Sarangi & Pungi locked & falling ----
             gong(tC2, 0.9, 6); taiko(tC2, 1.05, 0.5, 0.7); taiko(tC2 + 0.08, 0.7, 0.36, 0.9); cym(tC2, 1.0, 0.45);
             roll(tC2 + q, tS, q / 2, 0.26 * DRUMS, 0.6 * DRUMS, 1.2, 0.8);
-            for (let k = 0; k < 8; k++) { const t = tC2 + k * B, root = 50 - Math.round(k * 1.6), v = 0.75 + 0.03 * k;[0, 0, 3, 0].forEach((d, s) => { stac(t + s * q, root + d, q * 0.9, (s ? 0.6 : 0.95) * v, 0.4); stac(t + s * q, root + d + 12, q * 0.9, (s ? 0.35 : 0.55) * v, 0.62); shime(t + s * q, (s ? 0.35 : 0.7) * v * DRUMS, s & 1 ? 0.68 : 0.34, s & 1); }); }
+            for (let k = 0; k < 8; k++) { const t = tC2 + k * B, root = 50 - Math.round(k * 1.6), v = 0.75 + 0.03 * k;[0, 0, 1, 0].forEach((d, s) => { stac(t + s * q, root + d, q * 0.9, (s ? 0.6 : 0.95) * v, 0.4); stac(t + s * q, root + d + 12, q * 0.9, (s ? 0.35 : 0.55) * v, 0.62); shime(t + s * q, (s ? 0.35 : 0.7) * v * DRUMS, s & 1 ? 0.68 : 0.34, s & 1); }); }
             [[50, 57, 62, 65], [47, 54, 59, 62], [44, 51, 56, 59], [41, 48, 53, 56]].forEach((c, k) => pad(tC2 + 1.5 * k, tC2 + 1.5 * k + 1.5, c, 0.9, 1.5, { att: 0.12, rel: 0.3, trem: 0.5 }));
-            { const down = [89, 86, 84, 82, 79, 77, 74, 72], ns = []; down.forEach((m, k) => { ns.push([tC2 + k * B, 0.5625, m, 0.95], [tC2 + k * B + 0.5625, 0.1875, m + (k & 1 ? 3 : 2), 0.8]); }); lead(ns, Object.assign({}, ERHU, { gain: 0.62, pont: 0.3 })); }
-            [83, 81, 79, 77].forEach((s, k) => { const t = tC2 + 0.75 + 1.5 * k; lead([[t, q, s, 0.85], [t + q, 2 * q, s + 7, 0.9], [t + 3 * q, q, s + 5, 0.85], [t + 4 * q, 3 * q, s + 3, 0.85]], DIZI); glass(t + q, 0.5, s + 7, 0.7); bell(t + q, s + 19, 0.5, 0.7); });
-            // ---- SPLASH: half-time for two bars: low drums, spent breath, a riser into the beam
+            { const down = [89, 86, 84, 82, 79, 78, 74, 72], ns = []; down.forEach((m, k) => { ns.push([tC2 + k * B, 0.5625, m, 0.95], [tC2 + k * B + 0.5625, 0.1875, m + (k & 1 ? 3 : 1), 0.8]); }); lead(ns, Object.assign({}, SARANGI, { gain: 0.64, pont: 0.32 })); }
+            [83, 80, 79, 76].forEach((s, k) => { const t = tC2 + 0.75 + 1.5 * k; lead([[t, q, s, 0.88], [t + q, 2 * q, s + 6, 0.92], [t + 3 * q, q, s + 4, 0.88], [t + 4 * q, 3 * q, s + 1, 0.88]], PUNGI); pluck(t + q, s, 0.45, 0.65, 0.9); });
+
+            // ---- SPLASH (57.0s) & WHITE DRAGON PORTAL RESCUE (57.2s-63.0s): Celestial White Motif (Bowed Glass + Bansuri + Ghanta) arrives! ----
             taiko(tS, 1.2, 0.5, 0.7); cym(tS, 0.9, 0.55);
-            pad(tS + 0.4, tBe - 1.2, [31, 43, 50, 55], 0.7, 0.6, { att: 1.5 }); drone(tS, tBe, 43, 0.06, 1, 1);
+            pad(tS + 0.4, tBe - 1.2, [31, 43, 50, 55], 0.7, 0.6, { att: 1.5 }); drone(tS, tBe, 43, 0.065, 1, 1);
             for (let k = 1; k < 4; k++) { taiko(tS + k * 1.5, 0.55 + 0.08 * k, 0.5, 0.88); taiko(tS + k * 1.5 + 0.17, 0.36, 0.5, 0.92); }
-            lead(seq(tS + 1.5, [[0, 1.3, 67, 0.55], [1.5, 0.7, 65, 0.5], [2.25, 0.7, 62, 0.5]]), Object.assign({}, ERHU, { gain: 0.5, send: 0.5 }));
-            glass(tS + 3, 1.3, WM[0], 0.5); glass(tS + 4.5, 1.2, WM[1], 0.5); pluck(tS + 1.5, 43, 0.4, 0.4, 0.4); pluck(tS + 3, 50, 0.36, 0.6, 0.4);
+            white(tS + 0.25, [[0, 0.55], [0.55, 0.95], [1.5, 0.55], [2.05, 1.2]], 0.95, { xiao: 1, pan: sideW(tS + 1.0) });
+            lead(seq(tS + 1.5, [[0, 1.3, 67, 0.58], [1.5, 0.7, 66, 0.54], [2.25, 0.7, 62, 0.54]]), Object.assign({}, SARANGI, { gain: 0.52, send: 0.5, pan: 0.38 }));
+            lead(seq(tS + 3.0, [[0, 0.5, 79, 0.72], [0.5, 0.5, 80, 0.75], [1.0, 0.9, 83, 0.78]]), Object.assign({}, PUNGI, { gain: 0.34, pan: sideS(tS + 3.5) }));
+            glass(tS + 3.0, 1.3, WM[0], 0.55, 0.35); glass(tS + 4.5, 1.2, WM[1], 0.55, 0.38); pluck(tS + 1.5, 43, 0.42, 0.4, 0.6); pluck(tS + 3, 50, 0.38, 0.6, 0.6);
             pad(tBe - 3, tBe, [43, 50, 55, 58, 62, 66], 1.0, 1.8, { att: 2.6, from: 0.15, rel: 0.2, trem: 0.4 }); roll(tBe - 1.5, tBe, q, 0.2, 0.7, 1.1, 0.8);
-            // ---- BEAM: both breaths meet. Both modes at once (G Bb D against B F#), voices rising, a roll that never lands, until everything stops
+
+            // ---- BEAM (63.0s-67.5s): Crimson + White Dragon beams unite against the King Cobra! Alaap Choir, Sarangi, Shehnai & Glass rising ----
             gong(tBe, 0.8, 4.3); taiko(tBe, 1.15, 0.5, 0.7); cym(tBe, 0.9, 0.5);
             choir(tBe, CUT, [43, 55, 58, 62, 66], 0.9, { from: 0.55, rel: 0.02 }); choir(tBe + 2.25, CUT, [67, 70, 71, 74, 78], 0.9, { att: 1.4, from: 0.5, rel: 0.02 });
-            lead(seq(tBe, [[0.05, 1.45, 79, 0.9], [1.5, 0.75, 82, 0.92], [2.25, 0.75, 84, 0.95], [3.0, 0.75, 86, 0.98], [3.75, CUT - tBe - 3.8, 89, 1.0]]), Object.assign({}, ERHU, { tr: 0, gain: 0.4, vib: 1.4 })); glass(tBe, CUT - tBe - 0.8, 83, 0.9); glass(tBe + 1.5, CUT - tBe - 2.3, 90, 0.9);
+            lead(seq(tBe, [[0.05, 1.45, 79, 0.9], [1.5, 0.75, 82, 0.92], [2.25, 0.75, 84, 0.95], [3.0, 0.75, 86, 0.98], [3.75, CUT - tBe - 3.8, 89, 1.0]]), Object.assign({}, SARANGI, { tr: 0, gain: 0.42, vib: 1.4 }));
+            glass(tBe, CUT - tBe - 0.8, 83, 0.9); glass(tBe + 1.5, CUT - tBe - 2.3, 90, 0.9);
             for (let k = 0; k < 3; k++) taiko(tBe + (k + 1) * B, 0.7, 0.5, 0.75);
             roll(tBe + 2.25, CUT + q - 0.02, q / 2, 0.28, 0.8, 1.15, 0.75);
-            // ---- BLAST: the biggest hit; the pearl is foley. Then the FINALE: the theme lifted over Eb F Gm Bb, the white motif woven through it in the red scale
+
+            // ---- BLAST (67.5s) & FINALE (69.0s-84.0s): King Cobra defeated! Royal Mughal Sarangi, Shahi Shehnai, Sitar Jhala, Tabla & White Bansuri/Glass soar! ----
             gong(tBl, 1.5, 10); taiko(tBl, 0.9, 0.5, 0.7); cym(tBl, 1.3, 0.4); cym(tBl + 0.02, 1.1, 0.65);
-            drone(tFn - 1, tG + 2.4, 31, 0.07, 1.5, 2); drone(tFn - 1, tG + 2.4, 43, 0.065, 1.5, 2);
+            drone(tFn - 1, tG + 2.4, 31, 0.072, 1.5, 2); drone(tFn - 1, tG + 2.4, 43, 0.068, 1.5, 2);
             const fin = ['Eb', 'F', 'Gm', 'Bb', 'Eb'];
             fin.forEach((c, k) => {
                 const t = tFn + 3 * k, ch = k === 4 ? chords.Eb : chords[c]; pad(t, t + (k === 4 ? 1.5 : 3), ch.concat([ch[4] + 12]), 1.0 + 0.04 * k, 1.3 + 0.1 * k); if (k === 4) pad(t + 1.5, t + 3, chords.F.concat([72]), 1.2, 1.7);
-                strum(t, ch, 0.5); for (let e = 1; e < 8; e++) { const cc = k === 4 && e >= 4 ? chords.F : ch; pluck(t + e * B / 2, cc[[1, 2, 3, 4, 3, 2, 1, 2][e]] + (e > 2 && e < 6 ? 24 : 12), 0.46, 0.75 - 0.07 * e, 0.7); }
+                strum(t, ch, 0.52); for (let e = 1; e < 8; e++) { const cc = k === 4 && e >= 4 ? chords.F : ch; pluck(t + e * B / 2, cc[[1, 2, 3, 4, 3, 2, 1, 2][e]] + (e > 2 && e < 6 ? 24 : 12), 0.48, 0.75 - 0.07 * e, 0.8); }
                 groove(t, true, 0.86 + 0.035 * k, k === 1 || k === 3); if (!(k & 1)) cym(t, 0.8, 0.5); bass(t, ch[0], 0.85);
             });
             roll(tG - B, tG, q / 2, 0.45, 0.72, 1.1, 0.8);
-            const TH = [[0, 1.5, 79, 1.0], [1.5, 0.375, 77, 0.9], [1.875, 0.375, 74, 0.9], [2.25, 0.75, 77, 0.92], [3, 1.5, 74, 0.96], [4.5, 0.375, 72, 0.86], [4.875, 0.375, 70, 0.86], [5.25, 0.75, 72, 0.9],
-            [6, 0.75, 70, 0.9], [6.75, 0.75, 72, 0.92], [7.5, 0.75, 74, 0.96], [8.25, 0.75, 77, 1.0], [9, 2.25, 79, 1.0], [11.25, 0.375, 77, 0.9], [11.625, 0.375, 79, 0.94], [12, 1.5, 82, 1.0], [13.5, 0.75, 79, 0.95], [14.25, 0.75, 77, 0.95], [15, 2.0, 79, 1.0]];
-            lead(seq(tFn, TH), Object.assign({}, ERHU, { gain: 0.70 }));
+            const TH = [[0, 1.5, 79, 1.0], [1.5, 0.375, 78, 0.9], [1.875, 0.375, 74, 0.9], [2.25, 0.75, 77, 0.92], [3, 1.5, 74, 0.96], [4.5, 0.375, 72, 0.86], [4.875, 0.375, 70, 0.86], [5.25, 0.75, 72, 0.9],
+            [6, 0.75, 70, 0.9], [6.75, 0.75, 72, 0.92], [7.5, 0.75, 74, 0.96], [8.25, 0.75, 78, 1.0], [9, 2.25, 79, 1.0], [11.25, 0.375, 78, 0.9], [11.625, 0.375, 79, 0.94], [12, 1.5, 82, 1.0], [13.5, 0.75, 79, 0.95], [14.25, 0.75, 78, 0.95], [15, 2.0, 79, 1.0]];
+            lead(seq(tFn, TH), Object.assign({}, SARANGI, { gain: 0.72 }));
             TH.forEach(n => pad(tFn + n[0], tFn + n[0] + n[1] - 0.06, [n[2] - 24, n[2] - 12], 0.62 * n[3], 2.0, { att: 0.14, rel: 0.3 }));
-            lead(seq(tFn, [[0, 1.5, 79, 0.7], [1.5, 0.375, 77, 0.62], [1.875, 0.375, 74, 0.62], [2.25, 0.75, 77, 0.65], [3, 1.5, 74, 0.68], [4.5, 0.375, 72, 0.6], [4.875, 0.375, 70, 0.6], [5.25, 0.75, 72, 0.64],
-            [6, 0.75, 74, 0.66], [6.75, 0.75, 77, 0.68], [7.5, 0.75, 79, 0.72], [8.25, 0.75, 82, 0.76], [9, 2.25, 82, 0.76], [11.25, 0.375, 84, 0.7], [11.625, 0.375, 86, 0.74], [12, 1.5, 86, 0.8], [13.5, 0.75, 84, 0.74], [14.25, 0.75, 81, 0.74], [15, 2.0, 83, 0.72]]), DIZI);
-            const WG = [79, 86, 84, 82], WR = [[0, 0.375], [0.375, 1.125], [1.5, 0.375], [1.875, 1.0]];      // the white contour, sung in the red scale
-            white(tFn + 0.75, WR, 0.85, { ms: WG }); white(tFn + 6, WR, 0.7, { ms: WG, bell: 2, noGlass: 1 }); white(tFn + 9, WR, 0.9, { ms: WG }); glass(tFn + 12, 2.6, 86, 0.7);
-            // ---- GONG: one chord for both: red's G with white's B on top, the white motif falling through it
+            lead(seq(tFn, [[0, 1.5, 79, 0.72], [1.5, 0.375, 78, 0.64], [1.875, 0.375, 74, 0.64], [2.25, 0.75, 77, 0.66], [3, 1.5, 74, 0.70], [4.5, 0.375, 72, 0.62], [4.875, 0.375, 70, 0.62], [5.25, 0.75, 72, 0.65],
+            [6, 0.75, 74, 0.68], [6.75, 0.75, 77, 0.70], [7.5, 0.75, 79, 0.74], [8.25, 0.75, 82, 0.78], [9, 2.25, 82, 0.78], [11.25, 0.375, 84, 0.72], [11.625, 0.375, 86, 0.76], [12, 1.5, 86, 0.82], [13.5, 0.75, 84, 0.76], [14.25, 0.75, 81, 0.76], [15, 2.0, 83, 0.74]]), SHEHNAI);
+            const WG = [79, 86, 84, 82], WR = [[0, 0.375], [0.375, 1.125], [1.5, 0.375], [1.875, 1.0]];
+            white(tFn + 0.75, WR, 0.85, { ms: WG, xiao: 1 }); white(tFn + 6, WR, 0.7, { ms: WG, bell: 2, noGlass: 1 }); white(tFn + 9, WR, 0.9, { ms: WG, xiao: 1 }); glass(tFn + 12, 2.6, 86, 0.7);
+            // ---- GONG (84.0s): Final resolution chord over Shahi Mahal at dusk ----
             gong(tG, 1.9, tOut - tG + 0.2); taiko(tG, 1.25, 0.5, 0.7); taiko(tG, 0.8, 0.36, 0.95); cym(tG, 0.9, 0.5); pad(tG, tOut - 1.1, [31, 43, 50, 59, 62, 67, 71, 74], 1.0, 0.9, { rel: 0.9 });
-            [55, 59, 62, 64, 67, 71, 74, 79].forEach((m, i) => pluck(tG + 0.02 + i * 0.07, m, 0.5, 0.2 + i * 0.09, 0.7));
-            white(tG + 0.375, [[0, 0.375], [0.375, 0.375], [0.75, 0.375], [1.125, 0.8]], 0.8);
+            [55, 59, 62, 66, 67, 71, 74, 79].forEach((m, i) => pluck(tG + 0.02 + i * 0.07, m, 0.52, 0.2 + i * 0.09, 0.8));
+            white(tG + 0.375, [[0, 0.375], [0.375, 0.375], [0.75, 0.375], [1.125, 0.8]], 0.8, { xiao: 1 });
             for (const [dt, m, p] of [[0.9, 91, 0.3], [1.3, 86, 0.7], [1.7, 95, 0.45]]) bell(tG + dt, m, 0.4, p);
             lap('music'); memo.clear();
 
-            // the music makes room for the hero sounds and draws breath just before the big hits; stems are for analysis (P.stem is unset in the film)
-            // The dawn (everything before EMERGE) is lifted 3 dB so the opening carries on a small speaker; the lift lets go inside the EMERGE drum hit.
-            // The fight (CLASH1 to SPLASH) plays FIGHT dB over the theme; the finale opens FIN dB down and climbs bar by bar into the gong, which lands 1 dB over where it began.
+            // Dynamic music ducking around hero foley hits
             {
                 const MT = 1.30, iDawn = ix(tE), FIGHT = 2.4, FIN = 6.6; let g = MT, dl = 1; for (let i = 0; i < N; i++) {
                     if ((i & 31) === 0) {
@@ -344,26 +488,24 @@ import { Film } from './film.js';
                             - 0.2 * win(t, tLeap - 0.13, tLeap, 0.1, 0.004) - 0.36 * win(t, tHit - 0.16, tHit, 0.12, 0.004) - 0.22 * win(t, tHit, tHit + 1.3, 0.01, 0.9));
                     } L[i] *= g; R[i] *= g; if (i < iDawn) S[i] *= dl;
                 }
-            }      // (last line: a breath before the leap and before the lake, and room for the water)
-            // how loud the music is, a hundred times a second: the falls sink under it and come back in its gaps
+            }
             const MH = 441, mEnv = new Float32Array(Math.ceil(N / MH) + 1); if (EV && EV.fallL) (() => { for (let i = 0, k = 0, a = 0; i < N; i++) { a += Math.abs(L[i]) + Math.abs(R[i]); if ((i + 1) % MH === 0) { mEnv[k++] = a / (2 * MH); a = 0; } } })();
             if (P.stem === 'sfx') { L.fill(0); R.fill(0); S.fill(0); }
             if (P.stem !== 'music') {
-                // ================= foley =================
-                // one band of noise swept in pitch, level and position: fc(u), amp(u), pan(u), u = 0..1
+                // ================= Foley: Royal King Cobra (Ophiophagus hannah · রাজগোখরা), Crimson & White Dragons, Mughal Valley =================
                 function whoosh(t0, t1, fc, amp, pan, qq, gain, send, low = 0) {
                     const b = svf(); let f = 300, a = 0, at = 0, p = 0.5;
-                    for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) { if ((i & 31) === 0) { const u = (i / SR - t0) / (t1 - t0); f = fc(u); at = amp(u) * gain; p = pan(u); } a += (at - a) * 0.01; b.p(nz(), f, qq); const y = (b.bp + b.lp * low) * a; L[i] += y * (1 - p) * 1.2; R[i] += y * p * 1.2; S[i] += y * send; S2[i] += y * send * SW * (2 * p - 1); }
+                    for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) { if ((i & 31) === 0) { const u = clamp((i / SR - t0) / (t1 - t0), 0, 1); f = fc(u); at = amp(u) * gain; p = pan(u); } a += (at - a) * 0.01; b.p(nz(), f, qq); const y = (b.bp + b.lp * low) * a; L[i] += y * (1 - p) * 1.2; R[i] += y * p * 1.2; S[i] += y * send; S2[i] += y * send * SW * (2 * p - 1); }
                 }
                 function tick(t, f, amp, pan, ring = 0.004, send = 0.3) {
                     const i0 = ix(t), len = Math.floor(SR * ring * 7), w = TAU * f / SR, d = Math.exp(-1 / (ring * SR)), gl = (1 - pan) * 1.2, gr = pan * 1.2; let e = amp;
                     for (let i = 0, j = i0; i < len && j < N; i++, j++) { const y = (Math.sin(w * i) * 0.8 + (i < 40 ? nz() * 0.5 * (1 - i / 40) : 0)) * e; e *= d; if (j >= 0) { L[j] += y * gl; R[j] += y * gr; S[j] += y * send; } }
                 }
-                // dragon voice: a rough source through moving formants. shape(t) -> [pitchHz, level, openness 0..1]. RED is throat and chest; WHT is a shriek with frost in it
+                // Dragon voice: RED_V (deep chest & throat roar), WHT_V (celestial frost-lightning shriek)
                 const RED_V = { f1: 300, f1o: 520, f2: 760, f2o: 620, f3: 2100, f3o: 500, nb: 1500, nbo: 1400, sub: 0.9, sub2: 0.55, r0: 27, r1: 16, lp: 3600, f3g: 0.24, nbg: 0.22, hiss: 0 },
                     WHT_V = { f1: 560, f1o: 640, f2: 1650, f2o: 900, f3: 3500, f3o: 900, nb: 4600, nbo: 2600, sub: 0.10, sub2: 0.12, r0: 46, r1: 34, lp: 6800, f3g: 0.3, nbg: 0.2, hiss: 0.03 };
                 function voice(t0, t1, shape, gain, pan, V = RED_V, send = 0.34) {
-                    const F1 = svf(), F2 = svf(), F3 = svf(), nb = svf(), lp = bq('lp', V.lp, 0.7), sub = bq('lp', 160, 0.8), hs = bq('hp', 5500, 0.7), cl = bq('hp', 36, 0.7), pf = typeof pan === 'function' ? pan : null, gs = gain * send;      // pan: a number, or a function of film time (the head it belongs to moves)
+                    const F1 = svf(), F2 = svf(), F3 = svf(), nb = svf(), lp = bq('lp', V.lp, 0.7), sub = bq('lp', 160, 0.8), hs = bq('hp', 5500, 0.7), cl = bq('hp', 36, 0.7), pf = typeof pan === 'function' ? pan : null, gs = gain * send;
                     let gl = gain * (1 - (pf ? 0.5 : pan)) * 1.2, gr = gain * (pf ? 0.5 : pan) * 1.2, g2 = pf ? 0 : gs * SW * (2 * pan - 1);
                     let ph = 0, ph2 = 0, rph = 0, jit = 0, rj = 0, f0 = 60, lv = 0, lvT = 0, op = 0, a1 = V.f1, a2 = V.f2, a3 = V.f3, a4 = V.nb;
                     for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) {
@@ -376,20 +518,85 @@ import { Film } from './film.js';
                         L[i] += y * gl; R[i] += y * gr; S[i] += y * gs; S2[i] += y * g2;
                     }
                 }
-                function bark(t, gain, pan, f = 520) { const i0 = ix(t), n = Math.floor(SR * 0.09), b1 = bq('bp', f, 1.0), b2 = bq('bp', f * 2.7, 1.2), d = Math.exp(-1 / (0.016 * SR)); let e = gain; for (let i = 0, j = i0; i < n && j < N; i++, j++) { const x = nz(), y = (b1.p(x) * 2.2 + b2.p(x) * 1.3) * e; e *= d; L[j] += y * (1 - pan) * 1.2; R[j] += y * pan * 1.2; S[j] += y * 0.3; S2[j] += y * 0.3 * SW * (2 * pan - 1); } }   // the plosive front of a roar
-                // fire breath: an ignition thump, a roaring band of noise that flutters, hiss and sparks; it travels from pan p0 to p1
+                // Royal Emperor King Cobra (Ophiophagus hannah · রাজগোখরা) Vocal Synthesizer:
+                // Models the King Cobra's unique anatomical tracheal diverticulum (low-frequency hollow bronchial growl at 130-480 Hz)
+                // fused with high-pressure glottal/fang sibilant hiss (2.2-8.2 kHz) and forked-tongue/venom-spit modulation!
+                function cobraHiss(t0, t1, shape, gain, pan, send = 0.38) {
+                    const tr1 = svf(), tr2 = svf(), sib1 = svf(), sib2 = svf(), jet = bq('hp', 3400, 0.8), sub = bq('lp', 180, 0.7), dc = bq('hp', 42, 0.7);
+                    const pf = typeof pan === 'function' ? pan : null, gs = gain * send;
+                    let gl = gain * (1 - (pf ? 0.5 : pan)) * 1.2, gr = gain * (pf ? 0.5 : pan) * 1.2, g2 = pf ? 0 : gs * SW * (2 * pan - 1);
+                    let ph = 0, rph = 0, tph = 0, f0 = 92, lv = 0, lvT = 0, fl = 0.5, fTr1 = 260, fTr2 = 720, fSib1 = 3100, fSib2 = 5800;
+                    for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) {
+                        if ((i & 15) === 0) {
+                            const s = shape(i / SR); f0 = s[0]; lvT = Math.max(0, s[1]); fl = clamp(s[2], 0, 1.2);
+                            fTr1 = 210 + 230 * fl; fTr2 = 580 + 540 * fl;
+                            fSib1 = 2400 + 2100 * fl; fSib2 = 5100 + 2600 * fl;
+                            if (pf) { const p = pf(i / SR); gl = gain * (1 - p) * 1.2; gr = gain * p * 1.2; g2 = gs * SW * (2 * p - 1); }
+                        }
+                        lv += (lvT - lv) * 0.018;
+                        const n = nz();
+                        ph += f0 * (1 + 0.08 * n) / SR; if (ph >= 1) ph -= 1;
+                        rph += (34 + 28 * fl) / SR; if (rph >= 1) rph -= 1;
+                        tph += (14 + 6 * fl) / SR; if (tph >= 1) tph -= 1;
+                        const glottal = (saw(ph, f0 / SR) * 0.55 + (ph < 0.28 ? 0.9 : -0.35) * 0.55) * (0.4 + 0.6 * Math.pow(0.5 + 0.5 * Math.sin(TAU * rph), 1.5));
+                        const airSrc = n * (0.65 + 0.35 * Math.sin(TAU * rph) + 0.25 * Math.sin(TAU * tph));
+                        tr1.p(glottal + airSrc * 0.45, fTr1, 2.8);
+                        tr2.p(glottal + airSrc * 0.6, fTr2, 3.6);
+                        sib1.p(airSrc, fSib1, 1.8);
+                        sib2.p(n, fSib2, 2.2);
+                        const growlBody = tr1.bp * 1.35 + tr2.bp * 0.95 + sub.p(glottal) * 0.75;
+                        const hissEdge = (sib1.bp * 1.25 + sib2.bp * 0.85 + jet.p(n) * 0.42 * fl) * (0.45 + 0.65 * fl);
+                        const y = dc.p(Math.tanh((growlBody * 1.15 + hissEdge * 1.35) * 1.45)) * lv;
+                        L[i] += y * gl; R[i] += y * gr; S[i] += y * gs; S2[i] += y * g2;
+                    }
+                }
+                // King Cobra Whip-Strike (ছোবল), Cervical Hood-Rib Snap, Fang Bite & Pressurized Venom Spit
+                function cobraStrike(t, gain, pan) {
+                    const tPre = Math.max(0, t - 0.12);
+                    whoosh(tPre, t + 0.18, u => u < 0.4 ? 420 + 2200 * (u / 0.4) : 2620 * Math.pow(0.22, (u - 0.4) / 0.6), u => Math.sin(Math.PI * u) * (u < 0.45 ? 0.85 : 1.25), () => pan, 1.5, gain * 0.75, 0.3, 0.35);
+                    const i0 = ix(t), len = Math.floor(SR * 0.26), bJaw = bq('bp', 880, 1.6), bFang = bq('bp', 2850, 2.4), hVenom = bq('hp', 4400, 0.8), lThud = bq('lp', 290, 0.7);
+                    const gl = gain * (1 - pan) * 1.25, gr = gain * pan * 1.25; let ph = 0;
+                    for (let i = 0, j = i0; i < len && j < N; i++, j++) {
+                        if (j < 0) continue;
+                        const ti = i / SR, n = nz(); ph += (140 + 380 * Math.exp(-ti * 45)) / SR;
+                        const snap = (Math.sin(TAU * ph) * Math.exp(-ti * 32) * 0.9 + bJaw.p(n) * Math.exp(-ti * 48) * 1.8 + bFang.p(n) * Math.exp(-ti * 95) * 1.5) * Math.min(1, ti * 1800);
+                        const venom = hVenom.p(n) * sm(0.005, 0.03, ti) * Math.exp(-ti * 13) * (0.7 + 0.3 * Math.sin(ti * 190)) * 0.95;
+                        const thud = lThud.p(n) * Math.exp(-ti * 26) * 1.2;
+                        const y = Math.tanh((snap + venom + thud) * 1.4);
+                        L[j] += y * gl; R[j] += y * gr; S[j] += y * gain * 0.32; S2[j] += y * gain * 0.32 * SW * (2 * pan - 1);
+                    }
+                }
+                // Giant King Cobra Ventral-Scute & Keeled-Scale Slithering over Mughal Sandstone & Lakhori Brick
+                function cobraSlither(t0, t1, gain, panFn, rateHz = 2.4) {
+                    const b1 = svf(), b2 = bq('bp', 2400, 1.4), lo = bq('lp', 220, 0.7), hp = bq('hp', 650, 0.7);
+                    let p = 0.5, env = 0, fc = 1100;
+                    for (let i = Math.max(0, ix(t0)), e = Math.min(N, ix(t1)); i < e; i++) {
+                        if ((i & 31) === 0) {
+                            const t = i / SR, u = clamp((t - t0) / (t1 - t0), 0, 1);
+                            const wave = 0.45 + 0.55 * Math.pow(0.5 + 0.5 * Math.sin(TAU * rateHz * (t - t0)), 1.4);
+                            env = sm(0, 0.08, u) * (1 - sm(0.88, 1.0, u)) * wave * gain;
+                            fc = 950 + 950 * wave;
+                            p = typeof panFn === 'function' ? panFn(t) : panFn;
+                        }
+                        if (env < 1e-4) continue;
+                        const n = nz(); b1.p(n, fc, 1.6);
+                        const y = (hp.p(b1.bp) * 0.85 + b2.p(n) * 0.45 + lo.p(n) * 0.9) * env;
+                        L[i] += y * (1 - p) * 1.2; R[i] += y * p * 1.2; S[i] += y * 0.25;
+                    }
+                }
+
+                function bark(t, gain, pan, f = 520) { const i0 = ix(t), n = Math.floor(SR * 0.09), b1 = bq('bp', f, 1.0), b2 = bq('bp', f * 2.7, 1.2), d = Math.exp(-1 / (0.016 * SR)); let e = gain; for (let i = 0, j = i0; i < n && j < N; i++, j++) { const x = nz(), y = (b1.p(x) * 2.2 + b2.p(x) * 1.3) * e; e *= d; L[j] += y * (1 - pan) * 1.2; R[j] += y * pan * 1.2; S[j] += y * 0.3; S2[j] += y * 0.3 * SW * (2 * pan - 1); } }
                 function fire(t0, dur, gain, p0, p1) {
                     const fl = svf(), fr = svf(), cr = bq('bp', 2600, 1.2), hi = bq('hp', 3200, 0.7), i0 = ix(t0), len = Math.floor((dur + 0.9) * SR); let sp = 0, c1 = 900, c2 = 950, a0 = 0, pn = p0, ph = 0;
                     for (let i = 0, j = i0; i < len && j < N; i++, j++) {
                         const u = i / SR;
                         if ((i & 15) === 0) { c1 = 430 + 260 * Math.sin(u * 3.1) + 600 * Math.exp(-u * 7); c2 = 480 + 260 * Math.sin(u * 2.7 + 1) + 600 * Math.exp(-u * 7); a0 = sm(0, 0.006, u) * (0.75 + 0.7 * Math.exp(-u * 9)) * (1 - sm(dur - 0.3, dur + 0.5, u)) * (0.82 + 0.18 * Math.sin(u * 23)); pn = p0 + (p1 - p0) * clamp(u / dur, 0, 1); }
                         const n1 = nz(), n2 = nz(); fl.p(n1, c1, 0.9); fr.p(n2, c2, 0.9); if (rnd() < 0.0011) sp = (0.5 + rnd()) * 0.5; sp *= 0.985; ph += (44 + 30 * Math.exp(-u * 8)) / SR;
-                        const ck = cr.p(n1) * sp * 0.3 * gain, h = hi.p(n2) * (0.09 + 1.2 * Math.exp(-u * 45)), th = Math.sin(TAU * ph) * Math.exp(-u * 6) * 0.9 * Math.min(1, u * 600) + Math.sin(TAU * (190 * u + 9 * (1 - Math.exp(-u * 30)))) * Math.exp(-u * 32) * 1.2, bd = gain * (0.7 + 0.3 * Math.exp(-u * 12)), yl = Math.tanh((fl.lp * 5.5 + h + th * 1.6) * a0) * bd, yr = Math.tanh((fr.lp * 5.5 + h + th * 1.6) * a0) * bd;      // whoomp, then the body of the flame
+                        const ck = cr.p(n1) * sp * 0.3 * gain, h = hi.p(n2) * (0.09 + 1.2 * Math.exp(-u * 45)), th = Math.sin(TAU * ph) * Math.exp(-u * 6) * 0.9 * Math.min(1, u * 600) + Math.sin(TAU * (190 * u + 9 * (1 - Math.exp(-u * 30)))) * Math.exp(-u * 32) * 1.2, bd = gain * (0.7 + 0.3 * Math.exp(-u * 12)), yl = Math.tanh((fl.lp * 5.5 + h + th * 1.6) * a0) * bd, yr = Math.tanh((fr.lp * 5.5 + h + th * 1.6) * a0) * bd;
                         L[j] += (yl + ck) * (1 - pn) * 1.2; R[j] += (yr + ck * 0.8) * pn * 1.2; const sv = (yl + yr) * 0.25 + ck * 0.4; S[j] += sv; S2[j] += sv * SW * (2 * pn - 1);
                     }
                 }
-                // the tearing snap of lightning: an instant broadband edge and a scatter of smaller ones
-                function crack(ts, pw, pan, tail = 0.016, nsub = 7, spread = 0.22, send = 0.5, re = 0) {      // re: a second, smaller edge this many seconds later (the re-strike the picture flashes)
+                function crack(ts, pw, pan, tail = 0.016, nsub = 7, spread = 0.22, send = 0.5, re = 0) {
                     const i0 = ix(ts), len = Math.floor(SR * (Math.max(spread, re) + 0.3)), hl = bq('hp', 1500, 0.7), hr = bq('hp', 1700, 0.7), bl = bq('bp', 3300, 0.8), br = bq('bp', 2900, 0.8), lo = bq('lp', 380, 0.7), ev = [];
                     for (let k = 0; k < nsub; k++) ev.push([Math.floor((0.014 + rnd() * spread) * SR), 0.2 + rnd() * 0.45]); if (re) ev.push([Math.floor(re * SR), 0.55]); ev.sort((a, b) => a[0] - b[0]);
                     const d = Math.exp(-1 / (tail * SR)), d2 = Math.exp(-1 / (0.09 * SR)), gl = pw * (1 - pan) * 1.2, gr = pw * pan * 1.2; let e = 1, e2 = 1, p = 0;
@@ -399,7 +606,6 @@ import { Film } from './film.js';
                         const sv = (yl + yr) * 0.5 * pw * send; L[j] += yl * gl; R[j] += yr * gr; S[j] += sv; S2[j] += sv * SW * (2 * pan - 1); e *= d; e2 *= d2;
                     }
                 }
-                // two bodies meeting: sub thud, a punch of air, and scales clattering
                 function slam(t, pw, pan) {
                     const i0 = ix(t), len = Math.floor(SR * 0.9), lo = bq('lp', 520, 0.7), mid = svf(), hp = bq('hp', 1800, 0.7); let ph = 0, mc = 2200;
                     for (let i = 0, j = i0; i < len && j < N; i++, j++) {
@@ -409,7 +615,6 @@ import { Film } from './film.js';
                     }
                     for (let k = 0; k < 36; k++) tick(t + 0.003 + Math.pow(rnd(), 1.6) * 0.42, 1800 + rnd() * 5200, (0.10 + rnd() * 0.22) * pw, clamp(pan + (rnd() - 0.5) * 0.6, 0.05, 0.95));
                 }
-                // rock shattering: a burst, a low boom, rubble rolling and two seconds of stones knocking down the face
                 function rockBurst(t, pw, pan) {
                     const i0 = ix(t), len = Math.floor(SR * 2.4), lo = bq('lp', 240, 0.7), md = bq('bp', 700, 0.6), hp = bq('hp', 2500, 0.7); let ph = 0, rm = 0;
                     for (let i = 0, j = i0; i < len && j < N; i++, j++) {
@@ -419,10 +624,6 @@ import { Film } from './film.js';
                     }
                     for (let k = 0; k < 54; k++) { const dt = 0.03 + 2.0 * Math.pow(rnd(), 1.7); tick(t + dt, 420 + rnd() * rnd() * 4200, (0.10 + 0.26 * rnd()) * pw * (1 - dt / 2.2), clamp(pan + (rnd() - 0.5) * 0.6, 0.05, 0.95), 0.004 + rnd() * 0.012, 0.35); }
                 }
-
-                // the middle of an impact, where a small speaker can still hear it (300 Hz to 4 kHz): a crack (one broadband edge and four short knocks,
-                // horn on horn) and a tear (a ratchet of noise grains, dense at first and running down, each grain somewhere else between the ears).
-                // o: len (s), tear (level of the tear against the crack), knock (0..1), wet (1 = water: softer grains, lower band, no knocks), again (a second, smaller edge this many seconds later)
                 function rip(t, pw, pan, o = {}) {
                     const len = o.len || 0.42, tg = o.tear || 1, kn = o.knock === undefined ? 1 : o.knock, wet = o.wet ? 1 : 0, re = o.again ? Math.floor(o.again * SR) : -1, i0 = ix(t), n = Math.floor(SR * (len * 1.2 + 0.1));
                     const hp = bq('hp', 320, 0.7), lp = bq('lp', wet ? 3300 : 4300, 0.7), gr = svf(), d1 = Math.exp(-1 / (0.012 * SR)), d2 = Math.exp(-1 / (0.11 * SR)), dg = Math.exp(-1 / ((wet ? 0.014 : 0.010) * SR));
@@ -434,11 +635,10 @@ import { Film } from './film.js';
                         if (i >= next) { const u = i / SR / len; ge = (0.4 + 0.6 * rnd()) * Math.exp(-u * 1.8) * (1 - sm(0.85, 1.2, u)); gf = (wet ? 380 : 520) * Math.pow(wet ? 6.5 : 7.5, rnd()); gp = clamp(pan + (rnd() - 0.5) * 0.56, 0.06, 0.94); gap *= 1.03 + 0.07 * rnd(); next = i + Math.floor(gap * (0.6 + 0.8 * rnd())); }
                         ge *= dg; e1 *= d1; e2 *= d2; gr.p(n2 * ge, gf, 2.0);
                         let kk = 0; if (kn) for (let k = 0; k < 4; k++) { const m = K[k], y = m[0] * m[2] + m[1] * m[3] + hit; m[3] = m[2]; m[2] = y; kk += y * m[4]; }
-                        const y = Math.tanh((lp.p(hp.p(n1)) * (e1 * 1.5 + e2 * 0.9) * (i < 6 ? i / 6 : 1) + kk * 0.6 * kn) * 1.5) * pw, z = gr.bp * 2.6 * tg * pw;      // the edge is pressed here, so it arrives dense instead of driving the whole mix into the clipper
+                        const y = Math.tanh((lp.p(hp.p(n1)) * (e1 * 1.5 + e2 * 0.9) * (i < 6 ? i / 6 : 1) + kk * 0.6 * kn) * 1.5) * pw, z = gr.bp * 2.6 * tg * pw;
                         L[j] += y * (1 - pan) * 1.2 + z * (1 - gp) * 1.2; R[j] += y * pan * 1.2 + z * gp * 1.2; S[j] += (y + z) * 0.3;
                     }
                 }
-                // a body bursting out of water: a bright crown thrown up in an instant, the gulp of the hole it leaves, drops raining back. It moves from pan p0 to p1
                 function gush(t, pw, p0, p1, f0) {
                     const i0 = ix(t), n = Math.floor(SR * 0.95), h1 = bq('hp', 2500, 0.7), b1 = svf(), b2 = bq('bp', f0, 1.4); let g = 0, pn = p0, fc = 5000;
                     for (let i = 0, j = i0; i < n && j < N; i++, j++) {
@@ -448,15 +648,13 @@ import { Film } from './film.js';
                     }
                     for (let k = 0; k < 16; k++) { const dt = 0.1 + 0.8 * Math.pow(rnd(), 1.3); tick(t + dt, 1500 + rnd() * 4500, (0.03 + 0.07 * rnd()) * pw * (1 - dt), clamp(p0 + (p1 - p0) * dt + (rnd() - 0.5) * 0.3, 0.05, 0.95), 0.002 + rnd() * 0.003, 0.4); }
                 }
-
-                // a group of sounds rendered on its own, pressed into a dense wall (soft clip) and put back into the mix
                 function pressed(t0, t1, drive, level, fn, tone = 0) {
                     const a = Math.max(0, ix(t0)), b = Math.min(N, ix(t1)), kl = L.slice(a, b), kr = R.slice(a, b), c = tone ? 1 - Math.exp(-TAU * tone / SR) : 1; let yl = 0, yr = 0; L.fill(0, a, b); R.fill(0, a, b); fn();
                     for (let i = a; i < b; i++) { yl += (Math.tanh(L[i] * drive) * level - yl) * c; yr += (Math.tanh(R[i] * drive) * level - yr) * c; L[i] = yl + kl[i - a]; R[i] = yr + kr[i - a]; }
-                }       // tone: a soft low-pass on the pressed sound (Hz)
-                // levels, one per family of sound
-                const X = { growl: 1.6, roar: 1.22, thunder: 1.8, air: 1.7, white: 1.75, slam: 1.9, rip: 1.9, fire: 1.65, bolt: 2.0, rock: 5.2, splash: 2.6, gush: 2.1, breath: 2.9, beam: 2.2, blast: 1.9, pearl: 1.6 };
-                // ---- the valley: wind (the film's gusts plus the storm and the falls), waterfall, leaves
+                }
+                const X = { growl: 1.6, roar: 1.22, thunder: 1.8, air: 1.7, white: 1.75, cobra: 1.85, slam: 1.9, rip: 1.9, fire: 1.65, bolt: 2.0, rock: 5.2, splash: 2.6, gush: 2.1, breath: 2.9, beam: 2.2, blast: 1.9, pearl: 1.6 };
+
+                // ---- The Valley Bed: wind through Mughal arches, waterfall, banyan/pakur leaves ----
                 {
                     const wl = svf(), wr = svf(), fl = bq('lp', 4200, 0.7), fr = bq('lp', 4200, 0.7), fh = bq('hp', 240, 0.7), fh2 = bq('hp', 240, 0.7), rl = bq('bp', 4200, 0.8), rr = bq('bp', 4700, 0.8); let pl = 0, pr = 0, fc = 400, a = 0.1, wf = 0.03, ru = 0;
                     for (let i = 0; i < N; i++) {
@@ -470,38 +668,35 @@ import { Film } from './film.js';
                     }
                 }
                 lap('bed');
-                // ---- EMERGE: a grunt on the beat that opens into a long growl, and the air the body moves
+
+                // ---- EMERGE (9.0s): Crimson Dragon awakens & growls ----
                 bark(tE, 2.2 * X.growl, panR(tE), 240);
-                voice(tE, tE + 4.8, t => { const u = t - tE; return [44 + 9 * Math.sin(u * 1.3) + 14 * Math.exp(-u * 5), (0.3 * Math.exp(-u * 3.5) + sm(0.05, 1.3, u)) * sm(0, 0.02, u) * (1 - sm(2.4, 4.8, u)) * 0.55, 0.12 + 0.12 * Math.sin(u * 2.1) + 0.2 * Math.exp(-u * 6)]; }, 1.75 * X.growl, panR);
-                // (two cues were written for a loong that swept round the spire at EMERGE and hung in the air over it from DRUMS + 1.2 s. With the picture's own tables (EV) the body's air
-                //  follows its real speed, and the long growl is a crouch that ends in the leap: both are under "the valley answers", below. They stay here for a page without that picture.)
+                voice(tE, tE + 4.8, t => { const u = Math.max(0, t - tE); return [44 + 9 * Math.sin(u * 1.3) + 14 * Math.exp(-u * 5), (0.3 * Math.exp(-u * 3.5) + sm(0.05, 1.3, u)) * sm(0, 0.02, u) * (1 - sm(2.4, 4.8, u)) * 0.55, 0.12 + 0.12 * Math.sin(u * 2.1) + 0.2 * Math.exp(-u * 6)]; }, 1.75 * X.growl, panR);
                 if (!(EV && EV.spd)) whoosh(tE + 0.15, tE + 4.4, u => 240 + 560 * Math.sin(Math.PI * u), u => Math.pow(Math.sin(Math.PI * u), 2), u => panR(tE + 0.15 + 4.25 * u), 1.2, 0.5 * X.air, 0.25, 0.5);
                 if (tLeap < 0) voice(tD + 1.2, tD + 5.2, t => [50 + 10 * sm(tD + 1.2, tD + 4, t) - 8 * sm(tD + 4, tD + 5.2, t), win(t, tD + 1.2, tD + 5.2, 1.4, 1.8) * 0.42, 0.14 + 0.1 * Math.sin((t - tD) * 2.3)], 1.9 * X.growl, panR);
-                // ---- CHARGE: air drawn in, pitch rising
+
+                // ---- CHARGE (21.4s) & ROAR (24.0s-27.0s): Crimson Dragon inhale & fire challenge ----
                 {
                     const b = svf(), b2 = svf(), h = bq('hp', 3500, 0.7); let f1 = 260, f2 = 120; for (let i = ix(tC), e = ix(R0 + 0.05); i < e; i++) {
-                        const t = i / SR, u = (t - tC) / (R0 - tC), a = u * u * (1 - sm(0.965, 1.0, u)), n = nz(); if ((i & 15) === 0) { f1 = 260 + 2300 * u * u; f2 = 120 + 500 * u; } b.p(n, f1, 2.2); b2.p(n, f2, 1.5);
+                        const t = i / SR, u = clamp((t - tC) / (R0 - tC), 0, 1), a = u * u * (1 - sm(0.965, 1.0, u)), n = nz(); if ((i & 15) === 0) { f1 = 260 + 2300 * u * u; f2 = 120 + 500 * u; } b.p(n, f1, 2.2); b2.p(n, f2, 1.5);
                         const y = ((b.bp * 0.42 + b2.bp * 0.5 + h.p(n) * 0.05 * u) * a * 0.75 + Math.sin(TAU * (30 + 34 * u) * t) * a * 0.24) * 1.3; L[i] += y * 0.96; R[i] += y * 1.04; S[i] += y * 0.3;
                     }
                 }
-                // ---- ROAR: attack bark, long open throat, falling growl; fire and a sub drop. It ends with the bar, so the valley can go quiet
                 {
                     const D = R1 - R0;
                     pressed(R0 - 0.01, R1 + 0.4, 2.0, X.roar, () => {
                         bark(R0, 3.2, panR(R0)); bark(R0, 2.0, panR(R0) + 0.05, 260);
-                        voice(R0, R1 + 0.3, t => { const u = t - R0, f = u < 0.2 ? 96 + 116 * sm(0, 0.2, u) : 212 - 70 * sm(0.35, 1.6, u) - 62 * sm(1.6, D + 0.3, u); return [f, sm(0, 0.008, u) * (1 - sm(D - 0.75, D + 0.05, u)) * (0.9 + 0.1 * Math.sin(u * 7)), 0.6 + 0.4 * sm(0, 0.15, u) * (1 - sm(D - 0.9, D + 0.2, u))]; }, 1.5, panR);
-                        voice(R0, R1 + 0.3, t => { const u = t - R0; return [(u < 0.2 ? 48 + 58 * sm(0, 0.2, u) : 106 - 35 * sm(0.35, 1.6, u) - 30 * sm(1.6, D + 0.3, u)) * 1.005, sm(0, 0.008, u) * (1 - sm(D - 0.6, D + 0.05, u)), 0.25 + 0.5 * sm(0, 0.4, u) * (1 - sm(2.0, D, u))]; }, 1.1, t => panR(t) - 0.07);
+                        voice(R0, R1 + 0.3, t => { const u = Math.max(0, t - R0), f = u < 0.2 ? 96 + 116 * sm(0, 0.2, u) : 212 - 70 * sm(0.35, 1.6, u) - 62 * sm(1.6, D + 0.3, u); return [f, sm(0, 0.008, u) * (1 - sm(D - 0.75, D + 0.05, u)) * (0.9 + 0.1 * Math.sin(u * 7)), 0.6 + 0.4 * sm(0, 0.15, u) * (1 - sm(D - 0.9, D + 0.2, u))]; }, 1.5, panR);
+                        voice(R0, R1 + 0.3, t => { const u = Math.max(0, t - R0); return [(u < 0.2 ? 48 + 58 * sm(0, 0.2, u) : 106 - 35 * sm(0.35, 1.6, u) - 30 * sm(1.6, D + 0.3, u)) * 1.005, sm(0, 0.008, u) * (1 - sm(D - 0.6, D + 0.05, u)), 0.25 + 0.5 * sm(0, 0.4, u) * (1 - sm(2.0, D, u))]; }, 1.1, t => panR(t) - 0.07);
                         fire(R0, D - 0.7, 0.7, panR(R0) - 0.03, panR(R1 - 0.7) + 0.03);
-                        for (let i = ix(R0), e = ix(R0 + 2.6); i < e; i++) { const u = i / SR - R0, y = Math.sin(TAU * (41 - 9 * sm(0, 1.5, u)) * u) * Math.exp(-u * 1.5) * 0.60 * sm(0, 0.01, u); L[i] += y; R[i] += y; }
+                        for (let i = ix(R0), e = ix(R0 + 2.6); i < e; i++) { const u = Math.max(0, i / SR - R0), y = Math.sin(TAU * (41 - 9 * sm(0, 1.5, u)) * u) * Math.exp(-u * 1.5) * 0.60 * sm(0, 0.01, u); L[i] += y; R[i] += y; }
                     });
                 }
                 lap('red');
-                // ---- OMEN: thunder from high and far: a crack on each strike, a boom under it, and a roll that carries into the descent
-                // It is built for whatever strike list the film exports. Flashes closer than 0.2 s are one bolt re-striking (one boom, one swell of the roll, a crack each);
-                // crack power climbs to the last bolt; boom and roll are scaled so the passage is never louder than with the four default strikes; the roll is
-                // kept out of the band the cracks live in, each crack's scatter ends before the next flash, and the roll is gone by DESCENT + 3 s whatever the list.
+
+                // ---- OMEN (27.0s-30.0s): Thunder + Royal King Cobra (snake3 · রাজগোখরা) bursting out of the eastern lake water at 27.5s! ----
                 {
-                    const keepSeed = seed, keepNs = ns; seed = 90210; ns = 4517;      // its own random stream: the rest of the film is the same sound for any strike list
+                    const keepSeed = seed, keepNs = ns; seed = 90210; ns = 4517;
                     const nS = STR.length, PN = [0.56, 0.36, 0.64, 0.46], isHead = ts => ts.map((s, k) => k === 0 || s - ts[k - 1] >= 0.2);
                     const plan = hd => { const nh = hd.filter(Boolean).length; let h = -1; return hd.map(b => { if (b) h++; return (nh > 1 ? 0.62 + 0.38 * h / (nh - 1) : 1) * (h > 0 && h < nh - 1 ? (h & 1 ? 1.12 : 0.9) : 1); }); };
                     const head = isHead(STR), PW = plan(head), WR = PW.map((p, k) => head[k] ? p : p * 0.3), DW = plan(isHead(STR_DEF));
@@ -509,112 +704,151 @@ import { Film } from './film.js';
                     const measure = (ts, ws) => { let e = 0, pk = 0; for (let t = Math.min(ts[0], tO); t < tDe + 3; t += 0.02) { const v = rollAt(ts, ws, t) * fadeR(t); e += v * v; if (v > pk) pk = v; } return [e + 1e-9, pk + 1e-9]; };
                     const sq = a => a.reduce((s, v) => s + v * v, 0), ref = measure(STR_DEF, DW), now = measure(STR, WR);
                     const gRoll = Math.min(1, Math.sqrt(ref[0] / now[0]), ref[1] / now[1]), gBoom = Math.min(1, Math.sqrt(sq(DW) / sq(WR)));
-                    const capAt = t => { const w = sm(tDe - 0.4, tDe, t); return ref[1] * (1 - w) + rollAt(STR_DEF, DW, t) * w; };      // from DESCENT on, never above the roll of the default strikes
+                    const capAt = t => { const w = sm(tDe - 0.4, tDe, t); return ref[1] * (1 - w) + rollAt(STR_DEF, DW, t) * w; };
                     const boom = (s, g) => { const i0 = ix(s); let ph = 0; for (let i = 0, n = Math.floor(SR * 1.4); i < n && i0 + i < N; i++) { const ti = i / SR; ph += (30 + 26 * Math.exp(-ti * 7)) / SR; const y = Math.sin(TAU * ph) * Math.exp(-ti * 3.2) * Math.min(1, ti * 300) * g; L[i0 + i] += y; R[i0 + i] += y; S[i0 + i] += y * 0.2; } };
                     STR.forEach((s, k) => {
-                        const nx = k < nS - 1 ? STR[k + 1] : tDe > s + 0.05 ? tDe : s + 9, gap = nx - s, spread = clamp(gap - 0.13, 0.03, 0.22), late = 1 + 0.6 * sm(tDe - 1.2, tDe - 0.2, s) + (s > tDe - 0.05 ? 0.4 : 0);      // the scatter of small edges is over 0.1 s before the next flash; cracks grow as the white colour swells toward DESCENT
+                        const nx = k < nS - 1 ? STR[k + 1] : tDe > s + 0.05 ? tDe : s + 9, gap = nx - s, spread = clamp(gap - 0.13, 0.03, 0.22), late = 1 + 0.6 * sm(tDe - 1.2, tDe - 0.2, s) + (s > tDe - 0.05 ? 0.4 : 0);
                         crack(s, 0.56 * X.thunder * PW[k] * late, PN[k % 4], 0.016, Math.max(2, Math.round(7 * spread / 0.22)), spread, 0.5, gap >= 0.25 ? 0.11 : 0);
                         boom(s, 0.42 * X.thunder * WR[k] * gBoom * (k ? Math.min(1, Math.sqrt((s - STR[k - 1]) / 0.45)) : 1));
-                    });      // booms crowd less when the bolts come fast
-                    if (tDe > STR[nS - 1] + 0.05) { crack(tDe, 0.66 * X.thunder, 0.5, 0.016, 6, 0.2, 0.5, 0.11); if (tDe >= STR[nS - 1] + 0.4) boom(tDe, 0.2 * X.thunder * gBoom); }      // the cloud tears open: the picture's brightest flash
+                    });
+                    if (tDe > STR[nS - 1] + 0.05) { crack(tDe, 0.66 * X.thunder, 0.5, 0.016, 6, 0.2, 0.5, 0.11); if (tDe >= STR[nS - 1] + 0.4) boom(tDe, 0.2 * X.thunder * gBoom); }
                     const a = svf(), b = svf(), c = bq('bp', 330, 0.7), d = bq('bp', 290, 0.7), cl = bq('lp', 850, 0.7), dl = bq('lp', 850, 0.7), sh = bq('hp', 140, 0.7), t1 = Math.min(DUR, tDe + 3); let m1 = 0, m2 = 0, amp = 0, cut = 120;
                     for (let i = Math.max(0, ix(STR[0])), e = ix(t1); i < e; i++) {
                         if ((i & 63) === 0) { const t = i / SR, ev = Math.min(rollAt(STR, WR, t) * gRoll, capAt(t)); amp = ev * X.thunder * fadeR(t); cut = 80 + 170 * Math.min(1, ev); }
                         m1 += (nz() - m1) * 0.0009; m2 += (nz() - m2) * 0.0009; const n1 = nz(), n2 = nz(); a.p(n1, cut, 0.9); b.p(n2, cut * 1.1, 0.9);
-                        // the weight of the roll is the same in both ears (it survives a mono speaker); its width is a side signal above 140 Hz and the two mid bands
                         const g1 = amp * (0.45 + 42 * Math.abs(m1)), g2 = amp * (0.45 + 42 * Math.abs(m2)), lo = a.lp * 2.0 * g1, sd = sh.p(b.lp) * 2.1 * g2, l = lo + sd + cl.p(c.p(n1)) * 0.5 * g1, r = lo - sd + dl.p(d.p(n2)) * 0.5 * g2; L[i] += l * 1.05; R[i] += r * 0.95; S[i] += (l + r) * 0.3;
                     }
                     seed = keepSeed; ns = keepNs;
                 }
-                // ---- DESCENT: a far cry, and a long fall of air whose pitch drops as the white comes down
-                voice(tDe + 0.15, tDe + 1.7, t => { const u = t - tDe - 0.15; return [240 + 170 * sm(0, 0.3, u) - 120 * sm(0.4, 1.5, u), sm(0, 0.08, u) * (1 - sm(0.5, 1.5, u)) * 0.5, 0.7]; }, 0.62, panW, WHT_V, 1.2);
-                whoosh(tDe, tF - 0.05, u => 2600 * Math.pow(300 / 2600, u), u => Math.pow(sm(0, 0.9, u), 1.6) * (1 - sm(0.93, 1, u)), u => panW(tDe + u * (tF - 0.05 - tDe)), 3.4, 0.8 * X.air, 0.3, 0.2);
-                whoosh(tDe + 1, tF - 0.05, u => 5200 * Math.pow(900 / 5200, u), u => Math.pow(sm(0, 0.9, u), 2) * (1 - sm(0.93, 1, u)), u => 0.5 + 0.5 * (panW(tDe + 1 + u * (tF - 1.05 - tDe)) - 0.5), 1.2, 0.22 * X.air, 0.3);
-                // ---- FACEOFF: growls from both, left and right
+
+                // ---- 27.5s-36.0s (OMEN & DESCENT): Royal King Cobra bursts from the right lake surface, glides in S-waves & slithers up the Mughal ghats! ----
+                gush(27.5, 0.95 * X.gush, panS(27.5), panS(28.4), 680);
+                cobraHiss(27.6, 31.8, t => {
+                    const u = clamp((t - 27.6) / 4.2, 0, 1);
+                    return [88 + 24 * Math.sin(u * Math.PI) + 12 * Math.sin(u * 14), sm(0, 0.08, u) * (1 - sm(0.78, 1.0, u)) * 0.68, 0.55 + 0.38 * Math.sin(u * Math.PI)];
+                }, 0.95 * X.cobra, panS);
+                whoosh(28.0, 31.8, u => 520 + 680 * Math.sin(u * Math.PI * 3), u => sm(0, 0.12, u) * (1 - sm(0.85, 1.0, u)) * (0.65 + 0.35 * Math.sin(u * 22)), u => panS(28.0 + u * 3.8), 1.4, 0.65 * X.air, 0.3, 0.35);
+                cobraSlither(31.8, 35.8, 0.85 * X.cobra, panS, 2.8);
+                cobraHiss(33.4, 35.6, t => {
+                    const u = clamp((t - 33.4) / 2.2, 0, 1);
+                    return [95 + 18 * u, win(t, 33.4, 35.6, 0.35, 0.45) * 0.52, 0.45 + 0.35 * u];
+                }, 0.8 * X.cobra, panS);
+
+                // ---- FACEOFF (36.0s-39.0s): Crimson Dragon low growl (left) vs. Towering Hooded King Cobra warning growl-hiss & hood flare (right) ----
                 voice(tF + 0.2, tF + 1.9, t => [58 + 12 * Math.sin((t - tF) * 3.1), win(t, tF + 0.2, tF + 1.9, 0.4, 0.7) * 0.62, 0.2 + 0.15 * Math.sin((t - tF) * 5)], 0.9 * X.growl, panR);
-                voice(tF + 1.3, tF + 2.95, t => [128 + 22 * Math.sin((t - tF) * 4.3), win(t, tF + 1.3, tF + 2.95, 0.4, 0.5) * 0.6, 0.3 + 0.2 * Math.sin((t - tF) * 6.1)], 1.1 * X.growl, panW, WHT_V);
-                // ---- WROAR: a different animal: a rising shriek with ice in it, static crackling round it, frost hissing after; red snarls back
+                cobraHiss(tF + 1.1, tF + 2.95, t => {
+                    const u = Math.max(0, t - (tF + 1.1));
+                    return [84 + 26 * Math.sin(u * 3.8), win(t, tF + 1.1, tF + 2.95, 0.35, 0.45) * 0.75, 0.65 + 0.3 * Math.sin(u * 7.5)];
+                }, 1.15 * X.cobra, panS);
+
+                // ---- WROAR (39.0s-41.2s): King Cobra Whip-Strike (ছোবল) & Proteroglyphous Fang Bite on Red's Neck! ----
                 {
-                    const D = W1 - W0, lvl = u => sm(0, 0.03, u) * (1 - sm(D - 0.5, D + 0.1, u)) * (0.88 + 0.12 * Math.sin(u * 11));
-                    pressed(W0 - 0.005, W1 + 0.25, 2.2, X.white, () => {
-                        bark(W0, 1.1, panW(W0), 1500);
-                        voice(W0, W1 + 0.2, t => { const u = t - W0; return [150 + 290 * sm(0, 0.3, u) - 130 * sm(0.5, 1.5, u) - 90 * sm(1.5, D, u), lvl(u), 0.4 + 0.6 * sm(0, 0.2, u) * (1 - sm(D - 0.6, D, u))]; }, 1.05, panW, WHT_V);
-                        voice(W0, W1 + 0.2, t => { const u = t - W0; return [(150 + 290 * sm(0, 0.3, u) - 130 * sm(0.5, 1.5, u) - 90 * sm(1.5, D, u)) * 1.498, lvl(u) * 0.8, 0.8]; }, 0.5, t => panW(t) + 0.06, WHT_V);
-                        voice(W0, W1, t => { const u = t - W0; return [70 + 40 * sm(0, 0.3, u) - 30 * sm(0.6, D, u), lvl(u) * (1 - sm(1.2, 1.5, u)), 0.3]; }, 0.5, t => 0.5 + 0.6 * (panW(t) - 0.5));
-                    }, 3200);
-                    // ice: high partials that flicker independently; frost: a hiss that outlasts the cry
-                    const pIce = panW(W0 + 0.8), fq = [3120, 4270, 5230, 6610, 7930, 9340], ph = fq.map(() => rnd() * TAU), am = fq.map(() => rnd() * TAU), ar = fq.map(() => 9 + rnd() * 9), h1 = bq('hp', 6000, 0.7), h2 = bq('hp', 6500, 0.7);
-                    for (let i = ix(W0), e = ix(W1 + 0.9); i < e; i++) {
-                        const u = i / SR - W0, a = lvl(u), fa = (sm(0, 0.05, u) * (1 - sm(D - 0.2, D + 0.85, u))); let y = 0; for (let k = 0; k < 6; k++) { ph[k] += TAU * fq[k] * (1 + 0.02 * sm(0, 0.4, u)) / SR; am[k] += TAU * ar[k] / SR; y += Math.sin(ph[k]) * (0.5 + 0.5 * Math.sin(am[k])) / (1 + k * 0.35); }
-                        y *= a * 0.045 * X.white; const l = y + h1.p(nz()) * fa * 0.05 * X.white, r = y + h2.p(nz()) * fa * 0.05 * X.white; L[i] += l * (1 - pIce) * 2.1; R[i] += r * pIce * 2.1; S[i] += (l + r) * 0.4;
-                    }
-                    for (let t = W0; t < W1 + 0.3;) { const u = t - W0; tick(t, 3000 + rnd() * 5000, (0.05 + 0.12 * rnd()) * (0.7 + 0.6 * lvl(u)) * X.white, clamp(pIce + (rnd() - 0.5) * 0.5, 0.05, 0.95), 0.0012, 0.3); t += (0.3 + 1.4 * rnd()) / 85; }
-                    crack(W0, 0.5 * X.white, panW(W0), 0.012, 4, 0.1);
-                    voice(W0 + 1.6, W0 + 2.65, t => { const u = t - W0 - 1.6; return [88 + 60 * sm(0, 0.12, u) - 50 * sm(0.2, 0.95, u), sm(0, 0.03, u) * (1 - sm(0.5, 1.0, u)), 0.7 * sm(0, 0.1, u)]; }, 1.9 * X.growl, panR); bark(W0 + 1.6, 1.1 * X.growl, panR(W0 + 1.6), 300);
+                    const D = W1 - W0, lvl = u => sm(0, 0.02, u) * (1 - sm(D - 0.45, D + 0.1, u)) * (0.86 + 0.14 * Math.sin(u * 16));
+                    cobraHiss(W0 - 0.68, W0, t => {
+                        const u = clamp((t - (W0 - 0.68)) / 0.68, 0, 1);
+                        return [76 + 38 * u * u, u * u * 0.62, 0.4 + 0.55 * u];
+                    }, 0.95 * X.cobra, panS);
+                    pressed(W0 - 0.02, W1 + 0.25, 2.1, X.cobra, () => {
+                        cobraStrike(W0, 1.35, panS(W0));
+                        slam(W0 + 0.15, 0.55 * X.slam, panR(W0 + 0.15));
+                        rip(W0 + 0.15, 1.15 * X.rip, panR(W0 + 0.15), { len: 0.32, tear: 2.2 });
+                        cobraHiss(W0, W1 + 0.2, t => {
+                            const u = Math.max(0, t - W0), chew = 0.5 + 0.5 * Math.sin(u * 16);
+                            return [96 + 48 * sm(0, 0.18, u) - 34 * sm(0.4, D, u) + 14 * chew, lvl(u), 0.72 + 0.28 * chew];
+                        }, 1.25, panS);
+                        voice(W0, W1, t => { const u = Math.max(0, t - W0); return [68 + 34 * sm(0, 0.25, u) - 24 * sm(0.6, D, u), lvl(u) * (1 - sm(1.3, 1.7, u)) * 0.75, 0.35]; }, 0.55, t => 0.5 + 0.6 * (panS(t) - 0.5));
+                    }, 4200);
+                    voice(W0 + 1.6, W0 + 2.65, t => { const u = Math.max(0, t - W0 - 1.6); return [88 + 60 * sm(0, 0.12, u) - 50 * sm(0.2, 0.95, u), sm(0, 0.03, u) * (1 - sm(0.5, 1.0, u)), 0.7 * sm(0, 0.1, u)]; }, 1.9 * X.growl, panR);
+                    bark(W0 + 1.6, 1.1 * X.growl, panR(W0 + 1.6), 300);
                 }
-                // a rush of air sucked into the first collision
                 whoosh(tC1 - 0.85, tC1, u => 300 + 3000 * u * u, u => u * u * (1 - sm(0.9, 1, u)), u => 0.5, 1.6, 0.4 * X.air, 0.3);
                 lap('white');
-                // ---- CLASH1, FIRE2, BOLT, CLASH2
+
+                // ---- CLASH1 (42.0s), FIRE2 (46.5s), BOLT (49.5s), CLASH2 (51.0s-57.0s): Dragon vs. King Cobra aerial & terrace combat ----
                 slam(tC1, 0.74 * X.slam, panX(axis('clash1', 0))); rip(tC1, 1.9 * X.rip, panX(axis('clash1', 0)), { len: 0.4, tear: 2.8 });
-                voice(tC1 + 0.05, tC1 + 0.9, t => { const u = t - tC1 - 0.05; return [96 + 50 * sm(0, 0.1, u) - 40 * sm(0.2, 0.8, u), sm(0, 0.03, u) * (1 - sm(0.35, 0.85, u)), 0.6]; }, 0.75 * X.growl, panR);
-                voice(tC1 + 0.12, tC1 + 0.95, t => { const u = t - tC1 - 0.12; return [230 + 110 * sm(0, 0.1, u) - 90 * sm(0.2, 0.8, u), sm(0, 0.03, u) * (1 - sm(0.35, 0.8, u)), 0.7]; }, 0.5 * X.growl, panW, WHT_V);
-                whoosh(tC1 + 1.4, tC1 + 4.3, u => 500 + 900 * Math.sin(Math.PI * u), u => Math.pow(Math.sin(Math.PI * u), 2), u => panR(tC1 + 1.4 + 2.9 * u), 1.3, 0.2 * X.air, 0.25, 0.4);    // the chase wheels round the spire: each body's air where that body is
-                whoosh(tC1 + 1.5, tC1 + 4.4, u => 800 + 1300 * Math.sin(Math.PI * u), u => Math.pow(Math.sin(Math.PI * u), 2), u => panW(tC1 + 1.5 + 2.9 * u), 1.3, 0.16 * X.air, 0.25, 0.2);
-                { const p0 = panR(tFi), p1 = panR(tFi + 1.6); fire(tFi, 1.6, X.fire, p0, clamp(p1 + 0.6 * (p1 - p0), 0.1, 0.9)); }      // the flame runs the way the head sweeps, and on past it
+                cobraStrike(tC1 + 0.02, 1.1 * X.cobra, panS(tC1));
+                voice(tC1 + 0.05, tC1 + 0.9, t => { const u = Math.max(0, t - tC1 - 0.05); return [96 + 50 * sm(0, 0.1, u) - 40 * sm(0.2, 0.8, u), sm(0, 0.03, u) * (1 - sm(0.35, 0.85, u)), 0.6]; }, 0.75 * X.growl, panR);
+                cobraHiss(tC1 + 0.08, tC1 + 1.05, t => { const u = Math.max(0, t - tC1 - 0.08); return [105 + 42 * sm(0, 0.1, u) - 35 * sm(0.2, 0.85, u), sm(0, 0.02, u) * (1 - sm(0.4, 0.95, u)), 0.85]; }, 0.95 * X.cobra, panS);
+                whoosh(tC1 + 1.4, tC1 + 4.3, u => 500 + 900 * Math.sin(Math.PI * u), u => Math.pow(Math.sin(Math.PI * u), 2), u => panR(tC1 + 1.4 + 2.9 * u), 1.3, 0.2 * X.air, 0.25, 0.4);
+                cobraSlither(tC1 + 0.9, tFi - 0.1, 0.75 * X.cobra, panS, 3.4);
+                { const p0 = panR(tFi), p1 = panR(tFi + 1.6); fire(tFi, 1.6, X.fire, p0, clamp(p1 + 0.6 * (p1 - p0), 0.1, 0.9)); }
                 voice(tFi - 0.02, tFi + 1.7, t => { const u = t - tFi; return [90 + 70 * sm(0, 0.2, u) - 50 * sm(0.5, 1.6, u), sm(-0.02, 0.05, u) * (1 - sm(1.1, 1.7, u)) * 0.8, 0.5 + 0.4 * sm(0, 0.2, u)]; }, 0.7 * X.growl, panR);
-                const HITT = PIC.hit === +PIC.hit && PIC.hit > 0 && PIC.hit < 1 ? PIC.hit : 0.12, pB0 = panW(tBo), pB1 = panX(axis('boltHit', -0.5));      // the bolt's flight time in the picture (HIT in 70_fx.js: 0.12 s); it flies from white's mouth to the rock
+                cobraHiss(tFi + 0.35, tFi + 1.85, t => { const u = Math.max(0, t - (tFi + 0.35)); return [98 + 30 * Math.sin(u * 8), win(t, tFi + 0.35, tFi + 1.85, 0.15, 0.35) * 0.65, 0.8]; }, 0.85 * X.cobra, panS);
+                const HITT = PIC.hit === +PIC.hit && PIC.hit > 0 && PIC.hit < 1 ? PIC.hit : 0.12, pB0 = panS(tBo), pB1 = panX(axis('boltHit', -0.5));
+                cobraStrike(tBo, 1.2 * X.cobra, pB0);
+                cobraHiss(tBo - 0.25, tBo + 0.75, t => { const u = Math.max(0, t - (tBo - 0.25)); return [102 + 45 * sm(0, 0.25, u) - 35 * sm(0.3, 0.95, u), win(t, tBo - 0.25, tBo + 0.75, 0.12, 0.25) * 0.85, 0.9]; }, 0.95 * X.cobra, panS);
                 crack(tBo, 0.78 * X.bolt, pB0, 0.012, 5, 0.09, 0.4);
                 {
-                    const i0 = ix(tBo), h = bq('hp', 900, 0.7); let ph = 0, p2 = 0;       // the bolt itself: a buzzing fall of pitch
+                    const i0 = ix(tBo), h = bq('hp', 900, 0.7); let ph = 0, p2 = 0;
                     for (let i = 0, n = Math.floor(SR * 0.36); i < n; i++) {
                         const ti = i / SR; ph += (180 + 3400 * Math.exp(-ti * 14)) / SR; if (ph >= 1) ph -= 1; p2 += 118 / SR; if (p2 >= 1) p2 -= 1;
                         const y = h.p((ph < 0.5 ? 1 : -1) * (p2 < 0.35 ? 1 : 0.15) + nz() * 0.6) * Math.exp(-ti * 9) * Math.min(1, ti * 3000) * 0.21 * X.bolt, pn = pB0 + (pB1 - pB0) * Math.min(1, ti / HITT); L[i0 + i] += y * (1 - pn) * 1.2; R[i0 + i] += y * pn * 1.2; S[i0 + i] += y * 0.4;
                     }
                 }
                 rockBurst(tBo + HITT, 1.0 * X.rock, pB1);
-                slam(tC2, 1.15 * X.slam, panX(axis('clash2', 0))); rip(tC2, 1.7 * X.rip, panX(axis('clash2', 0)), { len: 0.62, again: 0.085, tear: 2.5 });      // the bite: two edges, and a longer tear as they lock
-                voice(tC2 + 0.04, tC2 + 1.5, t => { const u = t - tC2 - 0.04; return [100 + 60 * sm(0, 0.12, u) - 50 * sm(0.3, 1.4, u) + 8 * Math.sin(u * 31), sm(0, 0.03, u) * (1 - sm(0.7, 1.45, u)), 0.75]; }, 0.9 * X.growl, panR);
-                voice(tC2 + 0.1, tC2 + 1.6, t => { const u = t - tC2 - 0.1; return [250 + 130 * sm(0, 0.12, u) - 110 * sm(0.3, 1.4, u) + 14 * Math.sin(u * 37), sm(0, 0.03, u) * (1 - sm(0.7, 1.5, u)), 0.8]; }, 0.62 * X.growl, panW, WHT_V);
-                // the fall: two bodies grinding together, snarls passing left and right
+
+                // ---- CLASH2 (51.0s-57.0s): King Cobra locks fangs onto Red's neck & wraps in a crushing constriction coil! ----
+                slam(tC2, 1.15 * X.slam, panX(axis('clash2', 0))); rip(tC2, 1.7 * X.rip, panX(axis('clash2', 0)), { len: 0.62, again: 0.085, tear: 2.5 });
+                cobraStrike(tC2, 1.25 * X.cobra, panX(axis('clash2', 0)));
+                voice(tC2 + 0.04, tC2 + 1.5, t => { const u = Math.max(0, t - tC2 - 0.04); return [100 + 60 * sm(0, 0.12, u) - 50 * sm(0.3, 1.4, u) + 8 * Math.sin(u * 31), sm(0, 0.03, u) * (1 - sm(0.7, 1.45, u)), 0.75]; }, 0.9 * X.growl, panR);
+                cobraHiss(tC2 + 0.08, tC2 + 1.65, t => { const u = Math.max(0, t - tC2 - 0.08); return [98 + 44 * sm(0, 0.12, u) - 36 * sm(0.3, 1.4, u) + 12 * Math.sin(u * 28), sm(0, 0.02, u) * (1 - sm(0.7, 1.55, u)), 0.88]; }, 1.05 * X.cobra, panS);
                 whoosh(tC2 + 0.3, tS, u => 380 + 500 * u + 120 * Math.sin(u * 40), u => (0.35 + 0.65 * u) * sm(0, 0.1, u) * (1 - sm(0.985, 1, u)) * (0.6 + 0.4 * Math.sin(u * 150)), u => 0.5 + 0.2 * Math.sin(u * 9), 2.2, 0.5 * X.air, 0.2, 0.3);
+                cobraSlither(tC2 + 0.5, tS - 0.1, 0.85 * X.cobra, t => 0.5 + 0.22 * Math.sin((t - tC2) * 5), 4.2);
                 voice(tC2 + 2.2, tC2 + 3.6, t => [80 + 20 * Math.sin((t - tC2) * 9), win(t, tC2 + 2.2, tC2 + 3.6, 0.2, 0.6) * 0.8, 0.5], 1.1 * X.growl, panR);
-                voice(tC2 + 3.6, tC2 + 5.0, t => [210 + 40 * Math.sin((t - tC2) * 11), win(t, tC2 + 3.6, tC2 + 5.0, 0.2, 0.6) * 0.8, 0.6], 0.85 * X.growl, panW, WHT_V);
+                cobraHiss(tC2 + 3.4, tC2 + 5.2, t => [92 + 24 * Math.sin((t - tC2) * 11), win(t, tC2 + 3.4, tC2 + 5.2, 0.2, 0.5) * 0.85, 0.82], 1.1 * X.cobra, panS);
                 lap('fight');
-                // ---- SPLASH: a low boom, the body of water thrown up, spray hissing down for three seconds
+
+                // ---- SPLASH (57.0s) & WHITE DRAGON PORTAL RESCUE (57.2s-62.8s) ----
                 {
                     const i0 = ix(tS), len = Math.floor(SR * 3.8), bl = bq('bp', 900, 0.5), br = bq('bp', 1100, 0.5), hl = bq('hp', 3200, 0.7), hr = bq('hp', 3600, 0.7), ll = bq('lp', 300, 0.7), s1 = bq('hp', 300, 0.7), s2 = bq('hp', 330, 0.7), s3 = bq('lp', 4300, 0.7), s4 = bq('lp', 4000, 0.7); let ph = 0, g1 = 0, g2 = 0;
-                    const bal = clamp(0.5 + 0.5 * axis('splash', 0), 0.3, 0.7), wl = (1 - bal) * 2, wr = bal * 2;      // the water leans to where the knot goes in
+                    const bal = clamp(0.5 + 0.5 * axis('splash', 0), 0.3, 0.7), wl = (1 - bal) * 2, wr = bal * 2;
                     for (let i = 0, j = i0; i < len && j < N; i++, j++) {
                         const ti = i / SR, n1 = nz(), n2 = nz(); ph += (30 + 34 * Math.exp(-ti * 5)) / SR; g1 += (nz() - g1) * 0.004; g2 += (nz() - g2) * 0.004;
-                        const boom = Math.tanh(((Math.sin(TAU * ph) * 0.85 + 0.4 * Math.sin(2 * TAU * ph + 0.6)) * Math.exp(-ti * 2.6) * Math.min(1, ti * 500) + ll.p(n1 + n2) * Math.exp(-ti * 6) * 1.2) * 1.3) * 0.4, eb = (Math.exp(-ti * 5.5) * Math.min(1, ti * 500) + 0.3 * Math.exp(-ti * 1.6) * sm(0, 0.15, ti)) * 1.5, sl = (Math.exp(-ti * 55) * 2.0 + Math.exp(-ti * 8) * 1.1) * (i < 8 ? i / 8 : 1);      // sl: the slap of the surface, the hard middle of the hit
+                        const boom = Math.tanh(((Math.sin(TAU * ph) * 0.85 + 0.4 * Math.sin(2 * TAU * ph + 0.6)) * Math.exp(-ti * 2.6) * Math.min(1, ti * 500) + ll.p(n1 + n2) * Math.exp(-ti * 6) * 1.2) * 1.3) * 0.4, eb = (Math.exp(-ti * 5.5) * Math.min(1, ti * 500) + 0.3 * Math.exp(-ti * 1.6) * sm(0, 0.15, ti)) * 1.5, sl = (Math.exp(-ti * 55) * 2.0 + Math.exp(-ti * 8) * 1.1) * (i < 8 ? i / 8 : 1);
                         const es = (Math.exp(-ti * 1.15) * sm(0, 0.015, ti) * 0.8 + 0.5 * Math.exp(-Math.pow((ti - 0.75) / 0.45, 2))) * (1 - sm(3.2, 3.8, ti));
                         const l = (boom + (bl.p(n1) * eb * 0.8 + s3.p(s1.p(n1)) * sl * 0.9 + hl.p(n1) * es * (0.5 + 9 * Math.abs(g1)) * 0.2) * wl) * X.splash, r = (boom + (br.p(n2) * eb * 0.8 + s4.p(s2.p(n2)) * sl * 0.9 + hr.p(n2) * es * (0.5 + 9 * Math.abs(g2)) * 0.2) * wr) * X.splash; L[j] += l; R[j] += r; S[j] += (l + r) * 0.22;
                     }
-                    rip(tS, 1.3 * X.rip, bal, { len: 0.4, wet: 1, knock: 0, tear: 2.6 });      // a sheet of water tearing
+                    rip(tS, 1.3 * X.rip, bal, { len: 0.4, wet: 1, knock: 0, tear: 2.6 });
                     for (let k = 0; k < 40; k++) { const dt = 0.25 + 2.6 * Math.pow(rnd(), 1.4); tick(tS + dt, 1200 + rnd() * 3800, (0.04 + 0.1 * rnd()) * (1 - dt / 3) * X.splash, 0.1 + 0.8 * rnd(), 0.003 + rnd() * 0.004, 0.4); }
                 }
-                // the two burst out of the lake again (P.pic.exits: the picture's own crowns): shorter and brighter than the dive, one to each side, each dragging air up after it
+                // Red & King Cobra burst out of the lake (P.pic.exits)
                 {
                     const ex = PIC.exits || [], dflt = [tS + 0.66, tS + 0.61];
                     for (let k = 0; k < 2; k++) {
-                        const sd = k ? 1 : -1, e = ex[k] && ex[k].t === +ex[k].t && ex[k].t > tS && ex[k].t < tBe - 1.6 ? ex[k] : HX ? null : { t: dflt[k], x: 0.02 * sd }; if (!e) continue;      // no dive in the picture: no burst in the sound
-                        const who = k ? panW : panR, p0 = clamp(panX(e.x === +e.x ? e.x : 0, sd) + 0.16 * sd, 0.12, 0.88), p1 = who(e.t + 0.9);
+                        const sd = k ? 1 : -1, e = ex[k] && ex[k].t === +ex[k].t && ex[k].t > tS && ex[k].t < tBe - 1.6 ? ex[k] : HX ? null : { t: dflt[k], x: 0.02 * sd }; if (!e) continue;
+                        const who = k ? panS : panR, p0 = clamp(panX(e.x === +e.x ? e.x : 0, sd) + 0.16 * sd, 0.12, 0.88), p1 = who(e.t + 0.9);
                         gush(e.t, (k ? 0.85 : 1) * X.gush, p0, p1, k ? 980 : 620);
-                        whoosh(e.t + 0.03, e.t + 1.5, u => (k ? 900 : 520) * (1 + 1.6 * u), u => Math.pow(1 - u, 1.4) * sm(0, 0.06, u), u => who(e.t + 0.03 + 1.47 * u), 1.4, 0.3 * X.air, 0.3, k ? 0 : 0.3);
+                        whoosh(e.t + 0.03, e.t + 1.5, u => (k ? 900 : 520) * (1 + 1.6 * u), u => Math.pow(Math.max(0, 1 - u), 1.4) * sm(0, 0.06, u), u => who(e.t + 0.03 + 1.47 * u), 1.4, 0.3 * X.air, 0.3, k ? 0 : 0.3);
                     }
                 }
-                // spent breath left and right, a growl each, and air drawn toward the beam
-                const breath = (t, d, f, pan, g) => { whoosh(t, t + d * 0.42, u => f * (0.8 + 0.5 * u), u => Math.pow(Math.sin(Math.PI * u), 1.5) * 0.6, u => pan, 1.4, g, 0.3); whoosh(t + d * 0.45, t + d, u => f * (1.4 - 0.6 * u), u => Math.pow(Math.sin(Math.PI * Math.sqrt(u)), 1.5), u => pan, 1.2, g, 0.3, 0.2); };
-                breath(tS + 0.9, 1.5, 520, panR(tS + 1.6), 0.2 * X.breath); breath(tS + 1.7, 1.4, 2300, panW(tS + 2.4), 0.13 * X.breath); breath(tS + 2.7, 1.5, 500, panR(tS + 3.4), 0.18 * X.breath); breath(tS + 3.5, 1.4, 2200, panW(tS + 4.2), 0.12 * X.breath);
-                voice(tS + 2.3, tS + 4.1, t => [52 + 8 * Math.sin((t - tS) * 2.7), win(t, tS + 2.3, tS + 4.1, 0.5, 0.8) * 0.6, 0.16], 1.1 * X.growl, panR);
-                voice(tS + 3.5, tS + 5.3, t => [118 + 16 * Math.sin((t - tS) * 3.3), win(t, tS + 3.5, tS + 5.3, 0.5, 0.8) * 0.6, 0.28], 0.78 * X.growl, panW, WHT_V);
-                whoosh(tBe - 2.6, tBe, u => 260 * Math.pow(18, u), u => u * u * (1 - sm(0.9, 1, u)), u => 0.5, 2.0, 0.5 * X.air, 0.3);
-                // ---- BEAM: fire from the left, frost and lightning from the right, and the ball between them humming upward
+                // 57.2s: White Dragon bursts out of the sky portal in a blazing rescue dive with its frost-lightning shriek & ice shimmer!
+                crack(57.2, 0.55 * X.thunder, panW(57.3), 0.014, 5, 0.16, 0.45);
+                whoosh(57.2, 59.8, u => 2400 * Math.pow(360 / 2400, u), u => Math.pow(sm(0, 0.85, u), 1.5) * (1 - sm(0.9, 1, u)), u => panW(57.2 + u * 2.6), 3.0, 0.68 * X.air, 0.3, 0.2);
+                voice(57.55, 59.5, t => {
+                    const u = clamp((t - 57.55) / 1.95, 0, 1);
+                    return [165 + 270 * sm(0, 0.28, u) - 140 * sm(0.45, 1.0, u), sm(0, 0.05, u) * (1 - sm(0.75, 1.0, u)) * 0.82, 0.55 + 0.4 * sm(0, 0.25, u)];
+                }, 0.95 * X.white, panW, WHT_V);
                 {
-                    const E = CUT, D = E - tBe, sd = scrR(tBe + 2) <= scrW(tBe + 2) ? 0.4 : -0.4, fl = svf(), fr = svf(), jl = bq('bp', 3300, 0.5), jh = bq('hp', 6800, 0.7), bz = bq('hp', 1500, 0.7), hl = bq('lp', 1600, 0.7), rs = svf(), i0 = ix(tBe), i1 = ix(E); let a = 0, c1 = 600, c2 = 650, fk = 1, p1 = 0, p2 = 0, pb = 0, hc = 1000, pm = 0, rf = 300, thp = 0;
+                    const fq = [3120, 4270, 5230, 6610, 7930, 9340], ph = fq.map(() => rnd() * TAU), am = fq.map(() => rnd() * TAU), ar = fq.map(() => 9 + rnd() * 9), h1 = bq('hp', 6000, 0.7), h2 = bq('hp', 6500, 0.7);
+                    for (let i = ix(57.55), e = ix(59.8); i < e; i++) {
+                        const t = i / SR, u = clamp((t - 57.55) / 2.25, 0, 1), a = sm(0, 0.08, u) * (1 - sm(0.75, 1.0, u)), pIce = panW(t);
+                        let y = 0; for (let k = 0; k < 6; k++) { ph[k] += TAU * fq[k] / SR; am[k] += TAU * ar[k] / SR; y += Math.sin(ph[k]) * (0.5 + 0.5 * Math.sin(am[k])) / (1 + k * 0.35); }
+                        y *= a * 0.038 * X.white; const l = y + h1.p(nz()) * a * 0.038 * X.white, r = y + h2.p(nz()) * a * 0.038 * X.white;
+                        L[i] += l * (1 - pIce) * 1.9; R[i] += r * pIce * 1.9; S[i] += (l + r) * 0.35;
+                    }
+                }
+                const breath = (t, d, f, pan, g) => { whoosh(t, t + d * 0.42, u => f * (0.8 + 0.5 * u), u => Math.pow(Math.max(0, Math.sin(Math.PI * u)), 1.5) * 0.6, u => pan, 1.4, g, 0.3); whoosh(t + d * 0.45, t + d, u => f * (1.4 - 0.6 * u), u => Math.pow(Math.max(0, Math.sin(Math.PI * Math.sqrt(Math.max(0, u)))), 1.5), u => pan, 1.2, g, 0.3, 0.2); };
+                breath(tS + 0.9, 1.5, 520, panR(tS + 1.6), 0.2 * X.breath); breath(tS + 2.7, 1.5, 500, panR(tS + 3.4), 0.18 * X.breath);
+                voice(tS + 2.3, tS + 4.1, t => [52 + 8 * Math.sin((t - tS) * 2.7), win(t, tS + 2.3, tS + 4.1, 0.5, 0.8) * 0.6, 0.16], 1.1 * X.growl, panR);
+                cobraSlither(58.2, 61.6, 0.7 * X.cobra, panS, 3.2);
+                cobraHiss(tS + 3.2, tS + 5.5, t => [88 + 22 * Math.sin((t - tS) * 3.8), win(t, tS + 3.2, tS + 5.5, 0.45, 0.65) * 0.72, 0.68], 0.95 * X.cobra, panS);
+                whoosh(tBe - 2.6, tBe, u => 260 * Math.pow(18, u), u => u * u * (1 - sm(0.9, 1, u)), u => 0.5, 2.0, 0.5 * X.air, 0.3);
+
+                // ---- BEAM (63.0s-67.5s): Crimson Fire + White Frost-Lightning jets unite to obliterate the defiant King Cobra! ----
+                {
+                    const E = CUT, D = E - tBe, sd = scrR(tBe + 2) <= scrS(tBe + 2) ? 0.4 : -0.4, fl = svf(), fr = svf(), jl = bq('bp', 3300, 0.5), jh = bq('hp', 6800, 0.7), bz = bq('hp', 1500, 0.7), hl = bq('lp', 1600, 0.7), rs = svf(), i0 = ix(tBe), i1 = ix(E); let a = 0, c1 = 600, c2 = 650, fk = 1, p1 = 0, p2 = 0, pb = 0, pm = 0, rf = 300, thp = 0;
                     for (let i = i0; i < i1; i++) {
-                        const ti = (i - i0) / SR, u = ti / D;
+                        const ti = Math.max(0, (i - i0) / SR), u = clamp(ti / D, 0, 1);
                         if ((i & 15) === 0) { a = sm(0, 0.012, ti) * (0.62 + 0.38 * u * u + 0.5 * Math.exp(-ti * 8)) * (1 - sm(D - 0.008, D, ti)); c1 = 520 + 260 * Math.sin(ti * 3.1) + 500 * u; c2 = 570 + 260 * Math.sin(ti * 2.7 + 1) + 500 * u; if ((i & 1023) === 0) fk = 0.7 + 0.3 * rnd(); rf = 300 * Math.pow(9, u); }
                         const n1 = nz(), n2 = nz(), n3 = nz(); fl.p(n1, c1, 0.9); fr.p(n2, c2, 0.9); pb += 118 / SR; if (pb >= 1) pb -= 1;
                         const fireL = (fl.lp * 1.1 + fr.lp * 0.4) * (0.82 + 0.18 * Math.sin(ti * 23)), frostR = (jl.p(n3) * 0.4 + jh.p(n3) * 0.2) * fk + bz.p(pb < 0.3 ? 1 : -0.4) * 0.14 * fk;
@@ -622,41 +856,43 @@ import { Film } from './film.js';
                         const hum = hl.p(saw(p1, hf / SR) + saw(p2, hf * 1.012 / SR)) * (0.15 + 0.85 * u) * 0.22; rs.p(n1 + n2, rf, 3.0); const ris = rs.bp * u * u * 0.22; thp += (40 + 30 * Math.exp(-ti * 9)) / SR; const th = Math.sin(TAU * thp) * Math.exp(-ti * 5) * 0.5 * Math.min(1, ti * 600);
                         const l = (fireL * 0.55 * (1 + sd) + frostR * 0.13 * (1 - sd) + hum + ris + th) * a * X.beam, r = (fireL * 0.55 * (1 - sd) + frostR * 0.13 * (1 + sd) + hum + ris + th) * a * X.beam; L[i] += l; R[i] += r; S[i] += (l + r) * 0.22;
                     }
-                    voice(tBe, E, t => { const u = (t - tBe) / D; return [120 + 60 * u, sm(0, 0.04, t - tBe) * (0.6 + 0.3 * u) * (1 - sm(E - 0.01, E, t)), 0.7 + 0.3 * u]; }, 0.75 * X.growl, panR);
-                    voice(tBe, E, t => { const u = (t - tBe) / D; return [290 + 150 * u, sm(0, 0.04, t - tBe) * (0.6 + 0.3 * u) * (1 - sm(E - 0.01, E, t)), 0.7 + 0.3 * u]; }, 0.5 * X.growl, panW, WHT_V);
-                    for (let t = tBe + 0.05; t < E - 0.02;) { const u = (t - tBe) / D; tick(t, 2200 + rnd() * 6000, (0.04 + 0.10 * rnd()) * (0.4 + 0.6 * u) * X.beam, 0.2 + 0.6 * rnd(), 0.0015 + rnd() * 0.002, 0.3); t += (0.3 + 1.4 * rnd()) / (6 + 110 * u * u); }
+                    voice(tBe, E, t => { const u = clamp((t - tBe) / D, 0, 1); return [120 + 60 * u, sm(0, 0.04, t - tBe) * (0.6 + 0.3 * u) * (1 - sm(E - 0.01, E, t)), 0.7 + 0.3 * u]; }, 0.70 * X.growl, panR);
+                    voice(tBe, E, t => { const u = clamp((t - tBe) / D, 0, 1); return [290 + 150 * u, sm(0, 0.04, t - tBe) * (0.55 + 0.3 * u) * (1 - sm(E - 0.01, E, t)), 0.7 + 0.3 * u]; }, 0.45 * X.growl, panW, WHT_V);
+                    cobraHiss(tBe, E, t => { const u = clamp((t - tBe) / D, 0, 1); return [95 + 55 * u, sm(0, 0.04, t - tBe) * (0.65 + 0.35 * u) * (1 - sm(E - 0.01, E, t)), 0.85 + 0.15 * u]; }, 0.75 * X.cobra, panS);
+                    for (let t = tBe + 0.05; t < E - 0.02;) { const u = clamp((t - tBe) / D, 0, 1); tick(t, 2200 + rnd() * 6000, (0.04 + 0.10 * rnd()) * (0.4 + 0.6 * u) * X.beam, 0.2 + 0.6 * rnd(), 0.0015 + rnd() * 0.002, 0.3); t += (0.3 + 1.4 * rnd()) / (6 + 110 * u * u); }
                 }
                 lap('beam');
-                // ---- BLAST: sub drop, a wall of noise as wide as the room, a long tail; and what it leaves behind: the pearl, ringing high into the finale
+
+                // ---- BLAST (67.5s): Detonation, defeated King Cobra hurled into the eastern ravine, and the Pearl ringing into FINALE ----
                 {
                     const i0 = ix(tBl), len = Math.min(N - i0, Math.floor(SR * 7)), bl = svf(), br = svf(), tl = bq('lp', 1700, 0.7), tr2 = bq('lp', 1900, 0.7), ck1 = bq('hp', 3000, 0.7), ck2 = bq('hp', 3400, 0.7); let ph = 0, cut = 12000;
                     for (let i = 0; i < len; i++) {
                         const ti = i / SR, n1 = nz(), n2 = nz(); ph += (34 + 62 * Math.exp(-ti * 3.2)) / SR; if ((i & 15) === 0) cut = 420 + 4200 * Math.exp(-ti * 4.5) + 1700 * Math.exp(-ti * 1.2);
-                        const sub = (Math.sin(TAU * ph) * 0.8 + 0.4 * Math.sin(2 * TAU * ph) * Math.exp(-ti * 2.5)) * Math.exp(-ti * 2.0) * Math.min(1, ti * 900), eb = (Math.exp(-ti * 2.0) + 0.3 * Math.exp(-ti * 0.7)) * 1.6, et = Math.exp(-ti / 1.25) * sm(0.03, 0.4, ti) * 0.5, ec = Math.exp(-ti * 40) * 0.5, sb = Math.tanh(sub * 2.9) * 0.68;      // the low wave is pressed on its own, so it no longer gates the wall of noise
+                        const sub = (Math.sin(TAU * ph) * 0.8 + 0.4 * Math.sin(2 * TAU * ph) * Math.exp(-ti * 2.5)) * Math.exp(-ti * 2.0) * Math.min(1, ti * 900), eb = (Math.exp(-ti * 2.0) + 0.3 * Math.exp(-ti * 0.7)) * 1.6, et = Math.exp(-ti / 1.25) * sm(0.03, 0.4, ti) * 0.5, ec = Math.exp(-ti * 40) * 0.5, sb = Math.tanh(sub * 2.9) * 0.68;
                         bl.p(n1, cut, 0.8); br.p(n2, cut, 0.8); const j = i0 + i, l = (sb + Math.tanh((bl.lp * eb * 1.5 + ck1.p(n1) * ec) * 3.2) * 0.72 + tl.p(n1) * et) * X.blast, r = (sb + Math.tanh((br.lp * eb * 1.5 + ck2.p(n2) * ec) * 3.2) * 0.72 + tr2.p(n2) * et) * X.blast;
                         L[j] += l; R[j] += r; S[j] += (l + r) * 0.2;
                     }
-                    crack(tBl, 0.6 * X.thunder, 0.5, 0.02, 8, 0.3, 0.5); rip(tBl + 0.012, 0.75 * X.rip, 0.5, { len: 1.15, knock: 0.6, tear: 1.6 });      // the edge of the shock, and the air and stone it tears on its way out
+                    crack(tBl, 0.6 * X.thunder, 0.5, 0.02, 8, 0.3, 0.5); rip(tBl + 0.012, 0.75 * X.rip, 0.5, { len: 1.15, knock: 0.6, tear: 1.6 });
+                    cobraHiss(tBl + 0.15, tBl + 3.6, t => { const u = clamp((t - (tBl + 0.15)) / 3.45, 0, 1); return [130 * Math.pow(0.48, u), sm(0, 0.05, u) * Math.pow(Math.max(0, 1 - u), 1.6) * 0.65, 0.8 * (1 - 0.5 * u)]; }, 0.75 * X.cobra, t => clamp(0.65 + 0.22 * ((t - tBl) / 3.6), 0.5, 0.9));
                     const t1 = Math.min(DUR, tG + 1.6), fqs = [1568, 1975.5, 2349.3, 3136, 3951, 4698.6], osc = [];
                     fqs.forEach((f, k) => { for (const df of [0, 1.3 + k * 0.6]) { const w = TAU * (f + df) / SR, a0 = rnd() * TAU; osc.push([Math.cos(w), Math.sin(w), Math.cos(a0), Math.sin(a0), 1 / (1 + k * 0.45), k & 1 ? 0.35 : 0.65, k === 1 || k === 4 ? 1 : 0]); } });
                     let env = 0, envB = 0, eA = 0, eB = 0; for (let i = i0, e = ix(t1); i < e; i++) {
                         if ((i & 31) === 0) {
-                            const t = i / SR, u = t - tBl, bar = t < tFn ? 9 : (t - tFn) % 3, edge = sm(0, 0.004, u) * (1 - sm(tG - 0.5, t1, t)) * 0.018 * X.pearl, hit = 0.9 * Math.exp(-u * 1.3);
+                            const t = i / SR, u = Math.max(0, t - tBl), bar = t < tFn ? 9 : (t - tFn) % 3, edge = sm(0, 0.004, u) * (1 - sm(tG - 0.5, t1, t)) * 0.018 * X.pearl, hit = 0.9 * Math.exp(-u * 1.3);
                             env = (hit + 1.45 * sm(0.3, 2.2, u) * (0.8 + 0.2 * Math.sin(u * 2.1)) * (1 + 1.1 * Math.exp(-bar / 0.55))) * edge; envB = (hit + 0.9 * sm(tG - 1.5, tG + 0.2, t)) * edge;
                         }
                         eA += (env - eA) * 0.004; eB += (envB - eB) * 0.004; let l = 0, r = 0; for (let k = 0; k < osc.length; k++) { const o = osc[k], x = o[2] * o[0] - o[3] * o[1]; o[3] = o[2] * o[1] + o[3] * o[0]; o[2] = x; const v = o[3] * o[4] * (o[6] ? eB : eA); l += v * (1 - o[5]); r += v * o[5]; }
                         L[i] += l; R[i] += r; S[i] += (l + r) * 0.6;
                     }
                 }
-                // the air the pair move as they climb away, and the eaves ringing after each blow of wind
                 whoosh(tFn + 0.4, tFn + 5, u => 420 + 700 * Math.sin(Math.PI * u), u => Math.pow(Math.sin(Math.PI * u), 2), u => 0.25 + 0.5 * u, 1.2, 0.2, 0.25, 0.4);
                 whoosh(tG - 3.4, tG + 0.6, u => 500 + 1500 * u, u => Math.pow(Math.sin(Math.PI * u), 2), u => 0.6 - 0.2 * u, 1.3, 0.2, 0.3);
-                // GONG: the cloud takes the two (P.pic.cloud: each loong's own vanishing): a soft breath drawn in after each and shut off as it goes; then the rift closes with one low thump
+                // GONG (84.0s): Cloud portal takes the victorious Crimson & White Dragons
                 {
                     const c = PIC.cloud || {}, ok = a => a && a[0] === +a[0] && a[1] === +a[1] && a[0] > tG - 1.2 && a[1] < END - 0.3, cw = ok(c.w) ? c.w : [tG + 1.2, tG + 1.8], cr = ok(c.r) ? c.r : [tG + 1.2, tG + 1.8];
-                    const fadeAt = t => 1 - sm(tOut - 0.7, END - 0.05, t);      // the master's closing fade: what happens inside it is lifted by what the fade takes
-                    const inhale = (te, f0, f1, pan, g) => { const t0 = te - clamp(te - tG - 0.3, 0.6, 1.6); g /= Math.max(0.45, fadeAt(te - 0.1)); whoosh(t0, te, u => f0 * Math.pow(f1 / f0, u * u), u => Math.pow(u, 2.2) * (1 - sm(0.94, 1, u)), u => pan, 2.2, g, 0.5, 0.15); whoosh(t0 + (te - t0) * 0.35, te, u => 2.4 * f0 * Math.pow(f1 / f0, u), u => Math.pow(u, 3) * (1 - sm(0.95, 1, u)), u => pan, 1.2, g * 0.45, 0.5); };      // it lasts as long as the cloud takes to swallow the body (the heads go in at GONG) and shuts off when the tail is through
-                    let tw = cw[1]; const tr = cr[1]; if (Math.abs(tw - tr) < 0.35) tw = Math.min(tw, Math.max(cw[0] + 0.12, tr - 0.5));      // they go in side by side: white, who leads, is swallowed first
+                    const fadeAt = t => 1 - sm(tOut - 0.7, END - 0.05, t);
+                    const inhale = (te, f0, f1, pan, g) => { const t0 = te - clamp(te - tG - 0.3, 0.6, 1.6); g /= Math.max(0.45, fadeAt(te - 0.1)); whoosh(t0, te, u => f0 * Math.pow(f1 / f0, u * u), u => Math.pow(Math.max(0, u), 2.2) * (1 - sm(0.94, 1, u)), u => pan, 2.2, g, 0.5, 0.15); whoosh(t0 + (te - t0) * 0.35, te, u => 2.4 * f0 * Math.pow(f1 / f0, u), u => Math.pow(Math.max(0, u), 3) * (1 - sm(0.95, 1, u)), u => pan, 1.2, g * 0.45, 0.5); };
+                    let tw = cw[1]; const tr = cr[1]; if (Math.abs(tw - tr) < 0.35) tw = Math.min(tw, Math.max(cw[0] + 0.12, tr - 0.5));
                     inhale(tw, 620, 3000, panX(scrW(tw - 0.4), 1.6), 1.25 * X.air); inhale(tr, 300, 1500, panX(scrR(tr - 0.4), -1.6), 1.5 * X.air);
                     const ts = clamp(c.shut === +c.shut ? c.shut : tG + 2.75, tG + 0.8, END - 0.75), comp = 1 / Math.max(0.3, fadeAt(ts + 0.06));
                     whoosh(ts - 0.5, ts, u => 1100 * Math.pow(0.22, u), u => u * u * (1 - sm(0.93, 1, u)), u => 0.5, 1.6, 0.16 * X.air * comp, 0.4, 0.3);
@@ -671,27 +907,17 @@ import { Film } from './film.js';
                 for (const [t, m, p] of [[R0 + 0.9, 82, 0.75], [R0 + 1.3, 86, 0.2], [R0 + 1.9, 79, 0.6], [tC1 + 0.7, 86, 0.2], [tS + 0.9, 84, 0.7], [tS + 1.6, 79, 0.25], [tBl + 0.5, 91, 0.3], [tBl + 0.8, 86, 0.75], [tBl + 1.2, 94, 0.5]]) bell(t, m, 0.42, p);
                 lap('blast');
 
-                // ================= the valley answers =================
-                // What the played picture does besides the two heads, each sound placed by the picture's own tables (EV = P.pic.ev, read once at load by
-                // Score.world from the modules that draw these things): rock under the body, the leap, the air of the dive, crowns thrashed and blown
-                // through, wings, the lake taking 170 m of body and giving it back, its rings on the shore, the falls, the fronts of the wind, hung
-                // things, the sleeping breath, the storm's cold wind, the insects of the dusk.
-                // (It is a function of its own, and so is each of its long loops: the engine compiles a function with a hot loop only while that function is small.)
+                // ================= The Valley Answers (Picture-Driven Environmental Foley) =================
                 if (P.stem === 'new') { L.fill(0); R.fill(0); S.fill(0); S2.fill(0); }
                 function valley() {
-                    let qa = 24680, qb = 1357911;      // these sounds have their own noise (nq) and their own dice (rq): nothing older moves when one of them changes
+                    let qa = 24680, qb = 1357911;
                     const nq = () => { qa = (Math.imul(qa, 1664525) + 1013904223) | 0; return qa * 4.656612873077393e-10; }, rq = () => { qb = (qb + 0x6D2B79F5) | 0; let t = Math.imul(qb ^ qb >>> 15, 1 | qb); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-                    // In the long loops below the noise is a function of the sample's own number (nh: -1..1, uh: 0..1, k: which stream), not the next value of a stream:
-                    // a loop may then skip the stretches where its sound is silent, and what it plays afterwards is the same whatever it skipped
                     const hs = (i, k) => { let x = Math.imul((i + Math.imul(k, 0x632BE5AB)) | 0, 0x9E3779B1 | 0); x ^= x >>> 15; x = Math.imul(x, 0x85EBCA6B | 0); x ^= x >>> 13; x = Math.imul(x, 0xC2B2AE35 | 0); return x ^ x >>> 16; };
                     const nh = (i, k) => hs(i, k) * 4.656612873077393e-10, uh = (i, k) => (hs(i, k) >>> 0) / 4294967296;
-                    // levels, one per family of sound
                     const Y = { scrape: 0.78, stone: 1.6, leap: 0.7, air: 0.7, rustle: 0.26, thrash: 0.6, dove: 0.75, egret: 1.1, hit: 0.42, rush: 0.85, shed: 0.16, slap: 1.0, rear: 0.8, wash: 0.75, falls: 1.0, gust: 0.32, storm: 0.12, bugs: 0.1, knock: 0.3, cloth: 1.0, breath: 0.7 };
-                    if (P.solo) { const keep = String(P.solo).split(','); for (const k of Object.keys(Y)) if (keep.indexOf(k) < 0) Y[k] = 0; }      // QA: one family of sound alone (?solo=rush,shed)
+                    if (P.solo) { const keep = String(P.solo).split(','); for (const k of Object.keys(Y)) if (keep.indexOf(k) < 0) Y[k] = 0; }
                     const put = (i, y, p, send) => { L[i] += y * (1 - p) * 1.2; R[i] += y * p * 1.2; S[i] += y * send; S2[i] += y * send * SW * (2 * p - 1); };
-                    const rockPan = t => panX(tab(EV.scx, EHz, t));      // where on screen the rock is that the red loong lies on
-                    // ---- scales on stone: wherever the body lies on rock and moves. Each scale edge that lets go is a click (one every 0.32 m of slide: a slow
-                    //      ratchet while it creeps, a rasp as it slides, a zip when 170 m of it streams off the summit); under it the grind of its weight ----
+                    const rockPan = t => panX(tab(EV.scx, EHz, t));
                     if (EV.spd && EV.seat) (() => {
                         const b = svf(), lo = bq('lp', 190, 0.7), hp = bq('hp', 700, 0.7), dk = Math.exp(-1 / (0.004 * SR)); let a = 0, at = 0, ph = 0, rate = 10, fc = 1200, p = 0.5, tk = 0;
                         for (let i = 0; i < N; i++) {
@@ -701,7 +927,6 @@ import { Film } from './film.js';
                             b.p(nh(i, 1), fc, 1.5); put(i, (hp.p(b.bp) * (0.42 + 1.9 * tk) + lo.p(nh(i, 2)) * 1.4) * a, p, 0.3);
                         }
                     })();
-                    // ---- the stones it looses: a second or two of fall, then they knock down the face (as many, second by second, as the picture's scrapes) ----
                     if (EV.scrT) {
                         let tot = 0; for (let k = 0; k < EV.scrT.length; k++) tot += EV.scrT[k]; const K = Math.min(1, (EV.stones > 0 ? Math.min(EV.stones, 320) : 260) / tot);
                         for (let sec = 0; sec < EV.scrT.length; sec++) {
@@ -712,15 +937,12 @@ import { Film } from './film.js';
                             }
                         }
                     }
-                    // ---- the leap: a growl that tightens while it gathers itself on the summit, the kick against the rock, a cry the wind of the dive takes ----
                     if (tLeap > 0 && Y.leap > 0) {
                         const t0 = tLeap - 2.3;
-                        voice(t0, tLeap + 0.12, t => { const u = (t - t0) / 2.42; return [46 + 30 * u * u, win(t, t0, tLeap + 0.12, 1.1, 0.1) * (0.24 + 0.3 * u), 0.14 + 0.3 * u * u]; }, 1.9 * X.growl * Y.leap, panR);
+                        voice(t0, tLeap + 0.12, t => { const u = clamp((t - t0) / 2.42, 0, 1); return [46 + 30 * u * u, win(t, t0, tLeap + 0.12, 1.1, 0.1) * (0.24 + 0.3 * u), 0.14 + 0.3 * u * u]; }, 1.9 * X.growl * Y.leap, panR);
                         slam(tLeap, 0.34 * X.slam * Y.leap, rockPan(tLeap)); bark(tLeap, 0.9 * X.growl * Y.leap, panR(tLeap), 300);
-                        voice(tLeap, tLeap + 1.15, t => { const u = t - tLeap; return [104 + 78 * sm(0, 0.14, u) - 60 * sm(0.2, 1.1, u), sm(0, 0.02, u) * (1 - sm(0.3, 1.1, u)) * 0.85, 0.75 * sm(0, 0.1, u) * (1 - 0.5 * sm(0.4, 1.1, u))]; }, 1.5 * X.growl * Y.leap, panR);
+                        voice(tLeap, tLeap + 1.15, t => { const u = Math.max(0, t - tLeap); return [104 + 78 * sm(0, 0.14, u) - 60 * sm(0.2, 1.1, u), sm(0, 0.02, u) * (1 - sm(0.3, 1.1, u)) * 0.85, 0.75 * sm(0, 0.1, u) * (1 - 0.5 * sm(0.4, 1.1, u))]; }, 1.5 * X.growl * Y.leap, panR);
                     }
-                    // ---- the air its body tears, by its real speed and its distance from the lens (to FACEOFF: from there on the fight has its own): the dive at
-                    //      70 m/s, the whip over the bank, the launch out of the lake. A second, thin band is the edge of the tear when it is fast and near ----
                     if (EV.spd && EV.hd) (() => {
                         const b = svf(), b2 = svf(); let a = 0, at = 0, a2 = 0, at2 = 0, f1 = 400, f2 = 2600, p = 0.5, m = 0;
                         for (let i = ix(1), e = ix(tF); i < e; i++) {
@@ -732,19 +954,16 @@ import { Film } from './film.js';
                             const n1 = nh(i, 5); b.p(n1, f1 * (1 + 4 * m), 1.3); b2.p(n1, f2, 2.4); put(i, (b.bp + b.lp * 0.35) * a + b2.bp * a2 * (0.6 + 14 * Math.abs(m)), p, 0.28);
                         }
                     })();
-                    // ---- crowns: leaves and boughs thrashed as a body goes over them (bright, torn, with the whump of the limbs), and the softer rush of each
-                    //      gust front crossing the trees of the valley, in the half of the frame where those trees stand ----
                     if (EV.thL || EV.ruL) (() => {
                         const E2 = EV.hz2 || 25, hL = bq('hp', 2300, 0.7), hR = bq('hp', 2500, 0.7), tL = svf(), tR = svf(), bo = bq('bp', 240, 0.8); let gl = 0, gr = 0, hl = 0, hr = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0;
                         for (let i = 0; i < N; i++) {
-                            if ((i & 63) === 0) { const t = i / SR; const a = tab(EV.ruL, E2, t), b = tab(EV.ruR, E2, t), k = Math.pow(a + b + 1e-9, 0.6) * Y.rustle, c = tab(EV.thL, E2, t), d = tab(EV.thR, E2, t), k2 = Math.pow(c + d + 0.08, -0.6) * Y.thrash; gl = a * k; gr = b * k; hl = c * k2; hr = d * k2; }      // (the fronts stand out of the steady rustle; the passes are pressed together, so the far ones are still heard, but a crown that barely stirs stays silent)
+                            if ((i & 63) === 0) { const t = i / SR; const a = tab(EV.ruL, E2, t), b = tab(EV.ruR, E2, t), k = Math.pow(a + b + 1e-9, 0.6) * Y.rustle, c = tab(EV.thL, E2, t), d = tab(EV.thR, E2, t), k2 = Math.pow(c + d + 0.08, -0.6) * Y.thrash; gl = a * k; gr = b * k; hl = c * k2; hr = d * k2; }
                             if (gl + gr + hl + hr < 2e-4) continue;
                             const n1 = nh(i, 6), n2 = nh(i, 7); f1 += (n1 - f1) * 0.006; f2 += (n2 - f2) * 0.006; let l = hL.p(n1) * (0.35 + 9 * Math.abs(f1)) * gl, r = hR.p(n2) * (0.35 + 9 * Math.abs(f2)) * gr;
                             if (hl + hr > 2e-4) { f3 += (n2 - f3) * 0.012; f4 += (n1 - f4) * 0.012; tL.p(n1, 3300, 0.8); tR.p(n2, 3700, 0.8); const w = bo.p(n1 + n2) * 0.5; l += (tL.bp * (0.3 + 12 * Math.abs(f3)) + tL.hp * 0.25 + w) * hl; r += (tR.bp * (0.3 + 12 * Math.abs(f4)) + tR.hp * 0.25 + w) * hr; }
                             L[i] += l; R[i] += r; S[i] += (l + r) * 0.16;
                         }
                     })();
-                    // ---- wings: every downstroke near enough to hear. A dove off a roof claps (a crack of the primaries, the thud of air, a thin whistle); an egret passing the lens is a soft beat of air ----
                     if (EV.wings) {
                         const W = EV.wings;
                         const dove = k => cached('wd' + k, () => {
@@ -754,50 +973,46 @@ import { Film } from './film.js';
                         const heavy = k => cached('we' + k, () => { const o = new Float32Array(Math.floor(SR * 0.24)), b = bq('bp', 290 + 70 * k, 0.7), h = bq('bp', 1500, 0.6); for (let i = 0; i < o.length; i++) { const ti = i / SR, n = nq(); o[i] = (b.p(n) * 1.8 + h.p(n) * 0.9 * Math.exp(-ti / 0.05)) * sm(0, 0.035, ti) * Math.exp(-ti / 0.055) * (1 - sm(0.2, 0.24, ti)); } return o; });
                         for (let j = 0; j + 3 < W.length; j += 4) { const p = clamp(panX(W[j + 1]) + (rq() - 0.5) * 0.08, 0.06, 0.94); if (W[j + 3] < 0.5) add(dove((rq() * 4) | 0), W[j], W[j + 2] * Y.dove * (0.7 + 0.6 * rq()), p, 0.35); else add(heavy((rq() * 3) | 0), W[j], W[j + 2] * Y.egret * (0.8 + 0.4 * rq()), p, 0.4); }
                     }
-                    // ---- the lake. An entry (not the SPLASH, which has its own): the slap of the surface and the deep boom of the hole, a sheet of water torn.
-                    //      Then, as long as a body streams through the surface, white water by its speed: a torn hiss, a ratchet of grains, the weight underneath ----
                     function plunge(t, pw, pan) {
                         const i0 = ix(t), len = Math.floor(SR * 3.0), s1 = bq('hp', 260, 0.7), s2 = bq('lp', 3600, 0.7), s3 = bq('hp', 290, 0.7), s4 = bq('lp', 3900, 0.7), bl = bq('bp', 760, 0.5), br = bq('bp', 900, 0.5), ll = bq('lp', 240, 0.7), hl = bq('hp', 3000, 0.7), hr = bq('hp', 3400, 0.7), wl = (1 - pan) * 2, wr = pan * 2; let ph = 0, g1 = 0, g2 = 0;
                         for (let i = 0, j = i0; i < len && j < N; i++, j++) {
                             if (j < 0) continue; const ti = i / SR, n1 = nq(), n2 = nq(); ph += (26 + 52 * Math.exp(-ti * 6)) / SR; g1 += (n2 - g1) * 0.004; g2 += (n1 - g2) * 0.004;
-                            const es = (Math.exp(-ti * 1.5) * sm(0, 0.02, ti) * 0.6 + 0.5 * Math.exp(-Math.pow((ti - 0.7) / 0.4, 2))) * (1 - sm(2.4, 3.0, ti)) * 0.2;      // what it threw up comes down again: a hiss that swells as the spray lands
+                            const es = (Math.exp(-ti * 1.5) * sm(0, 0.02, ti) * 0.6 + 0.5 * Math.exp(-Math.pow((ti - 0.7) / 0.4, 2))) * (1 - sm(2.4, 3.0, ti)) * 0.2;
                             const boom = Math.tanh(((Math.sin(TAU * ph) + 0.35 * Math.sin(2 * TAU * ph + 0.5)) * Math.exp(-ti * 2.3) * Math.min(1, ti * 450) + ll.p(n1 + n2) * Math.exp(-ti * 5) * 1.3) * 1.3) * 0.42;
                             const sl = (Math.exp(-ti * 50) * 2.2 + Math.exp(-ti * 7.5) * 1.0) * (i < 8 ? i / 8 : 1), eb = (Math.exp(-ti * 5) + 0.25 * Math.exp(-ti * 1.5) * sm(0, 0.15, ti)) * 1.3 * Math.min(1, ti * 500);
                             const l = (boom + (s2.p(s1.p(n1)) * sl * 0.9 + bl.p(n1) * eb * 0.75 + hl.p(n1) * es * (0.5 + 9 * Math.abs(g1))) * wl) * pw, r = (boom + (s4.p(s3.p(n2)) * sl * 0.9 + br.p(n2) * eb * 0.75 + hr.p(n2) * es * (0.5 + 9 * Math.abs(g2))) * wr) * pw; L[j] += l; R[j] += r; S[j] += (l + r) * 0.24;
                         }
                         for (let k = 0; k < 26; k++) { const dt = 0.3 + 2.2 * Math.pow(rq(), 1.4); tick(t + dt, 1200 + rq() * 3800, (0.03 + 0.08 * rq()) * (1 - dt / 2.6) * pw, clamp(pan + (rq() - 0.5) * 0.7, 0.08, 0.92), 0.003 + rq() * 0.004, 0.4); }
-                    }      // and the last heavy drops
+                    }
                     const slapB = k => cached('ws' + k, () => {
-                        const o = new Float32Array(Math.floor(SR * 0.2)), h = bq('hp', 2400, 0.7), b = bq('bp', 900, 0.8), f0 = 210 + 70 * k; let ph = 0;      // a wavelet against a flank: the gulp of a pocket of air, the slap, drops after it
+                        const o = new Float32Array(Math.floor(SR * 0.2)), h = bq('hp', 2400, 0.7), b = bq('bp', 900, 0.8), f0 = 210 + 70 * k; let ph = 0;
                         for (let i = 0; i < o.length; i++) { const ti = i / SR, n = nq(); ph += f0 * (1 + 1.5 * Math.min(1, ti / 0.07)) / SR; o[i] = (Math.sin(TAU * ph) * Math.exp(-ti / 0.022) * Math.min(1, ti * 300) * 0.45 + b.p(n) * Math.exp(-ti / 0.03) * 1.1 * Math.min(1, ti * 500) + h.p(n) * (Math.exp(-ti / 0.012) * 0.5 + 0.25 * Math.exp(-Math.pow((ti - 0.07) / 0.03, 2)))) * (1 - sm(0.16, 0.2, ti)); } return o;
                     });
                     for (const lp of LAPS) {
                         if (lp[5] || !(Y.hit > 0)) continue; const p0 = clamp(panX(lp[2]), 0.25, 0.75), p1 = clamp(panX(lp[3]), 0.2, 0.8);
                         plunge(lp[0], Y.hit * X.splash * lp[4], p0); rip(lp[0], 1.3 * X.rip * Y.hit * lp[4], p0, { len: 0.55, wet: 1, knock: 0, tear: 2.8 });
                         gush(lp[1] - 0.12, 1.3 * X.gush * Y.hit * lp[4], p1 - 0.05, p1 + 0.08, 540);
-                    }      // the tail is torn out of the lake
-                    if (EV.wet) for (const lp of LAPS) if (!lp[5]) for (let t = lp[0] + 1.3 + rq(); t < lp[1] - 0.2; t += 0.22 + 0.75 * rq()) if (tab(EV.wet, EHz, t) < 12) add(slapB((rq() * 4) | 0), t, (0.35 + 0.65 * rq()) * Y.slap, clamp(panX(tab(EV.wetx, EHz, t)) + (rq() - 0.5) * 0.3, 0.08, 0.92), 0.2);      // while it lies in the water: wavelets against its flanks
+                    }
+                    if (EV.wet) for (const lp of LAPS) if (!lp[5]) for (let t = lp[0] + 1.3 + rq(); t < lp[1] - 0.2; t += 0.22 + 0.75 * rq()) if (tab(EV.wet, EHz, t) < 12) add(slapB((rq() * 4) | 0), t, (0.35 + 0.65 * rq()) * Y.slap, clamp(panX(tab(EV.wetx, EHz, t)) + (rq() - 0.5) * 0.3, 0.08, 0.92), 0.2);
                     if (EV.wet) (() => {
                         const hL = bq('hp', 520, 0.7), hR = bq('hp', 570, 0.7), lL = bq('lp', 6000, 0.7), lR = bq('lp', 6500, 0.7), lo = bq('lp', 150, 0.7), gr = svf(), sL = bq('hp', 2000, 0.7), sR = bq('hp', 2300, 0.7), dg = Math.exp(-1 / (0.012 * SR)), dd = Math.exp(-1 / (0.003 * SR));
                         let a = 0, at = 0, sh = 0, shE = 0, p = 0.5, ge = 0, gf = 1500, gp = 0.5, next = 0, m1 = 0, m2 = 0, de = 0, dph = 0, dw = 0, dp = 0.5, rate = 0, live = false;
                         for (let i = 0; i < N; i++) {
-                            if ((i & 31) === 0) { const t = i / SR, w = tab(EV.wet, EHz, t), rz = Math.min(tab(EV.rise, EHz, t), 45) / 30; at = w > 0.3 ? Math.pow(Math.min(w, 80) / 70, 0.85) * Y.rush : 0; shE += (rz - shE) * (rz > shE ? 0.06 : 0.0007); sh = shE * Y.shed; rate = (25 + 300 * Math.min(shE, 1)) / SR; p = panX(tab(EV.wetx, EHz, t)); live = at > 1e-5 || a > 2e-5 || shE > 2e-4; }      // shE: water sheeting off a body that rises out of the lake; it pours for a second after
+                            if ((i & 31) === 0) { const t = i / SR, w = tab(EV.wet, EHz, t), rz = Math.min(tab(EV.rise, EHz, t), 45) / 30; at = w > 0.3 ? Math.pow(Math.min(w, 80) / 70, 0.85) * Y.rush : 0; shE += (rz - shE) * (rz > shE ? 0.06 : 0.0007); sh = shE * Y.shed; rate = (25 + 300 * Math.min(shE, 1)) / SR; p = panX(tab(EV.wetx, EHz, t)); live = at > 1e-5 || a > 2e-5 || shE > 2e-4; }
                             if (!live) continue;
                             a += (at - a) * 0.004; const n1 = nh(i, 8), n2 = nh(i, 9); m1 += (n1 - m1) * 0.0025; m2 += (n2 - m2) * 0.004;
                             if (i >= next) { ge = 0.35 + 0.65 * uh(i, 10); gf = 420 * Math.pow(7, uh(i, 11)); gp = clamp(p + (uh(i, 12) - 0.5) * 0.5, 0.06, 0.94); next = i + Math.floor((0.004 + 0.007 * uh(i, 13)) * SR); } ge *= dg; gr.p(n2 * ge, gf, 2.0);
-                            if (shE > 2e-4 && uh(i, 14) < rate) { de = (0.25 + 0.75 * uh(i, 15)) * Math.min(shE, 1.2); dw = TAU * (1700 + 4000 * uh(i, 16)) / SR; dph = 0; dp = clamp(p + (uh(i, 17) - 0.5) * 0.4, 0.06, 0.94); } dph += dw; de *= dd;      // drops
+                            if (shE > 2e-4 && uh(i, 14) < rate) { de = (0.25 + 0.75 * uh(i, 15)) * Math.min(shE, 1.2); dw = TAU * (1700 + 4000 * uh(i, 16)) / SR; dph = 0; dp = clamp(p + (uh(i, 17) - 0.5) * 0.4, 0.06, 0.94); } dph += dw; de *= dd;
                             const am = (0.55 + 9 * Math.abs(m1)) * a * 1.5, am2 = sh * (0.45 + 10 * Math.abs(m2)), low = lo.p(n1 + n2) * 2.2 * a, z = gr.bp * 2.4 * a, dr = Math.sin(dph) * de * 2.2 * Y.shed;
                             const l = (lL.p(hL.p(n1)) * am + sL.p(n1) * am2 + low) * (1 - p) * 1.2 + z * (1 - gp) * 1.2 + dr * (1 - dp) * 1.2, r = (lR.p(hR.p(n2)) * am + sR.p(n2) * am2 + low) * p * 1.2 + z * gp * 1.2 + dr * dp * 1.2;
                             L[i] += l; R[i] += r; S[i] += (l + r) * 0.2;
                         }
                     })();
-                    // its head comes up out of the lake: a blast of breath that clears the water from its throat, and a low growl held into the close-up
                     if (EV.tRear > 0 && Y.rear > 0) {
                         const tr = EV.tRear, pr = panR(tr + 0.3), t1 = Math.min(tC + 0.25, tr + 1.9);
-                        whoosh(tr - 0.05, tr + 0.85, u => 950 * (1.3 - 0.75 * u), u => sm(0, 0.07, u) * Math.pow(1 - u, 1.6), u => pr, 1.1, 0.34 * X.breath * Y.rear, 0.3, 0.3);
+                        whoosh(tr - 0.05, tr + 0.85, u => 950 * (1.3 - 0.75 * u), u => sm(0, 0.07, u) * Math.pow(Math.max(0, 1 - u), 1.6), u => pr, 1.1, 0.34 * X.breath * Y.rear, 0.3, 0.3);
                         if (t1 > tr + 0.9) voice(tr + 0.35, t1, t => [50 + 9 * Math.sin((t - tr) * 2.9), win(t, tr + 0.35, t1, 0.45, 0.5) * 0.5, 0.16 + 0.1 * Math.sin((t - tr) * 4.1)], 1.7 * X.growl * Y.rear, panR);
                     }
-                    // ---- the rings of each entry reach the shore: a swash up the bank and its drain, a slap where it meets rock ----
                     if (EV.wash) {
                         const W = EV.wash, wb = k => cached('wv' + k, () => {
                             const o = new Float32Array(Math.floor(SR * 1.5)), b = svf(), lo = bq('lp', 420, 0.7); let fc = 3000, m = 0;
@@ -808,21 +1023,18 @@ import { Film } from './film.js';
                         });
                         for (let j = 0; j + 2 < W.length; j += 3) add(wb((rq() * 3) | 0), W[j], W[j + 2] * Y.wash * (0.7 + 0.6 * rq()), clamp(panX(W[j + 1]) + (rq() - 0.5) * 0.1, 0.08, 0.92), 0.3);
                     }
-                    // ---- the falls: a steady bed, each fall on its side of the frame and by its distance, that sinks under the music and returns in its gaps ----
                     if (EV.fallL) (() => {
                         const f1 = bq('lp', 3600, 0.7), f2 = bq('lp', 3900, 0.7), h1 = bq('hp', 170, 0.7), h2 = bq('hp', 190, 0.7), lo = bq('bp', 105, 0.7); let gl = 0, gr = 0, dk = 1, m = 0;
                         for (let i = 0; i < N; i++) {
-                            if ((i & 63) === 0) { const t = i / SR, want = 1 / (1 + 8 * mEnv[(i / MH) | 0]); dk += (want - dk) * (want < dk ? 0.02 : 0.0025); const k = Y.falls * dk * (1 - 0.92 * win(t, R1 - 0.2, STR[0] + 0.06, 0.35, 0.06)); gl = tab(EV.fallL, 20, t) * k; gr = tab(EV.fallR, 20, t) * k; }      // (it holds its breath with the valley before the thunder)
+                            if ((i & 63) === 0) { const t = i / SR, want = 1 / (1 + 8 * mEnv[(i / MH) | 0]); dk += (want - dk) * (want < dk ? 0.02 : 0.0025); const k = Y.falls * dk * (1 - 0.92 * win(t, R1 - 0.2, STR[0] + 0.06, 0.35, 0.06)); gl = tab(EV.fallL, 20, t) * k; gr = tab(EV.fallR, 20, t) * k; }
                             const n1 = nh(i, 18), n2 = nh(i, 19); m += (n1 - m) * 0.0006; const am = 0.8 + 6 * Math.abs(m), rum = lo.p(n1 + n2) * 1.6, l = (h1.p(f1.p(n1)) + rum) * gl * am, r = (h2.p(f2.p(n2)) + rum) * gr * am; L[i] += l; R[i] += r; S[i] += (l + r) * 0.1;
                         }
                     })();
-                    // ---- the wind's fronts: each crosses the frame from the side it comes from, as the lens meets it ----
                     if (EV.gf) for (let j = 0; j + 3 < EV.gf.length; j += 4) {
                         const tR = EV.gf[j], tM = EV.gf[j + 1], tL = EV.gf[j + 2], s = EV.gf[j + 3], t0 = Math.max(0, Math.min(tR, tL, tM) - 0.5), t1 = Math.min(END, Math.max(tR, tL, tM) + 4.5), dir = tR < tL ? 1 : -1, fall = EV.gFall || 2.6; if (t1 - t0 < 1) continue;
                         whoosh(t0, t1, u => { const tau = t0 + u * (t1 - t0) - tM; return 330 + 420 * sm(-0.6, 0.5, tau) * Math.exp(-Math.max(tau, 0) / 3); }, u => { const tau = t0 + u * (t1 - t0) - tM + 0.3; return s * sm(0, 0.9, tau) * Math.exp(-Math.max(tau - 0.9, 0) / fall); },
                             u => clamp(0.5 + 0.34 * dir * (1 - 2 * sm(Math.min(tR, tL) - 0.3, Math.max(tR, tL) + 0.6, t0 + u * (t1 - t0))), 0.14, 0.86), 1.1, Y.gust * X.air, 0.2, 0.5);
                     }
-                    // ---- OMEN: the storm's shadow comes over the lens and a thin cold wind with it ----
                     if (EV.storm) {
                         let k0 = -1, k1 = -1; for (let k = 0; k < EV.storm.length; k++) if (EV.storm[k] > 0.02) { if (k0 < 0) k0 = k; k1 = k; }
                         if (k0 >= 0) {
@@ -831,7 +1043,6 @@ import { Film } from './film.js';
                             whoosh(t0, t1, u => 1900 + 420 * Math.sin(u * (t1 - t0) * 0.61 + 2), u => env(u) * 0.6, u => 0.5 - 0.3 * Math.sin(u * (t1 - t0) * 0.5), 4.2, Y.storm * X.air * 1.25, 0.35);
                         }
                     }
-                    // ---- insects: crickets in the grass of the bank while the loong sleeps, and again when the sun has left the lens (seven that chirp, two that trill) ----
                     {
                         const tD0 = EV.tDusk > 0 ? EV.tDusk : tG - 3, lvl = t => (1 - sm(tE - 2.2, tE - 0.2, t)) + sm(tD0 - 1, tD0 + 3, t), cb = (f, ms) => cached('ck' + f + '_' + ms, () => { const n = Math.floor(SR * ms / 1000), o = new Float32Array(n); for (let i = 0; i < n; i++) o[i] = Math.sin(TAU * f * i / SR) * Math.pow(Math.sin(Math.PI * i / n), 2); return o; });
                         for (let c = 0; c < 9; c++) {
@@ -842,7 +1053,6 @@ import { Film } from './film.js';
                             }
                         }
                     }
-                    // ---- hung things: a lantern thrown against its post where its swing is fastest; cloth that fills and cracks as a gust front reaches its hall ----
                     if (EV.knocks) {
                         const W = EV.knocks, kb = k => cached('lk' + k, () => { const o = new Float32Array(Math.floor(SR * 0.08)), f1 = 640 + 90 * k, h = bq('hp', 3000, 0.7), b = bq('bp', 2600, 1.2); for (let i = 0; i < o.length; i++) { const ti = i / SR, n = nq(); o[i] = ((Math.sin(TAU * f1 * ti) * Math.exp(-ti / 0.012) + 0.6 * Math.sin(TAU * f1 * 2.76 * ti + 1) * Math.exp(-ti / 0.007)) * Math.min(1, ti * 3000) + h.p(n) * Math.exp(-ti / 0.004) * 0.4 + b.p(n) * Math.exp(-ti / 0.02) * 0.25) * (1 - sm(0.06, 0.08, ti)); } return o; });
                         for (let j = 0; j + 2 < W.length; j += 3) add(kb((rq() * 3) | 0), W[j], W[j + 2] * Y.knock, panX(W[j + 1]), 0.3);
@@ -851,33 +1061,29 @@ import { Film } from './film.js';
                         const W = EV.cloth, cl = cached('clo', () => { const o = new Float32Array(Math.floor(SR * 0.1)), b1 = bq('bp', 1000, 0.6), b2 = bq('bp', 280, 0.8); for (let i = 0; i < o.length; i++) { const ti = i / SR, n = nq(); o[i] = (b1.p(n) * Math.exp(-ti / 0.014) * 0.7 + b2.p(n) * Math.exp(-ti / 0.035) * 1.5) * Math.min(1, ti * 450) * (1 - sm(0.08, 0.1, ti)); } return o; });
                         for (let j = 0; j + 2 < W.length; j += 3) for (let k = 0, n = 3 + ((rq() * 3) | 0), t = W[j] + 0.05; k < n; k++, t += 0.11 + 0.06 * rq()) add(cl, t, W[j + 2] * Y.cloth * Math.pow(0.75, k) * (0.6 + 0.4 * rq()), clamp(panX(W[j + 1]) + (rq() - 0.5) * 0.12, 0.08, 0.92), 0.3);
                     }
-                    // ---- asleep on the spire: the breath that swells its coils in the picture. Air drawn in as the chest fills, let go lower and longer, with the purr of the throat ----
                     if (EV.br) (() => {
                         const bi = svf(), be = svf(), lo = bq('lp', 110, 0.7), mx = EV.brMax > 0 ? EV.brMax : 0.13; let ai = 0, ae = 0, ti = 0, te = 0, fi = 420, fe = 240, rp = 0, p = 0.5;
                         for (let i = 0, e = Math.min(N, ix((EV.br.length - 1) / 20)); i < e; i++) {
-                            if ((i & 31) === 0) { const t = i / SR, d = (tab(EV.br, 20, t + 0.05) - tab(EV.br, 20, t - 0.05)) / 0.1 / (mx * 0.72), lv = tab(EV.br, 20, t) / mx; const k = Y.breath * (1 - sm(tE - 0.5, tE + 1.5, t)); ti = Math.max(0, d) * k; te = Math.max(0, -d) * k; fi = 360 + 260 * lv; fe = 190 + 110 * lv; p = panR(t); }      // (0.72 of its depth a second: how fast the chest of the picture fills)
+                            if ((i & 31) === 0) { const t = i / SR, d = (tab(EV.br, 20, t + 0.05) - tab(EV.br, 20, t - 0.05)) / 0.1 / (mx * 0.72), lv = tab(EV.br, 20, t) / mx; const k = Y.breath * (1 - sm(tE - 0.5, tE + 1.5, t)); ti = Math.max(0, d) * k; te = Math.max(0, -d) * k; fi = 360 + 260 * lv; fe = 190 + 110 * lv; p = panR(t); }
                             ai += (ti - ai) * 0.002; ae += (te - ae) * 0.002; if (ai + ae < 2e-5) continue; const n = nh(i, 20); bi.p(n, fi, 2.2); be.p(n, fe, 1.3); rp += 23 / SR;
                             put(i, bi.bp * ai * 0.8 + (be.bp + lo.p(n) * 3 * (0.5 + 0.5 * Math.sin(TAU * rp))) * ae, p, 0.4);
                         }
                     })();
                     if (EV.br && Y.breath > 0) for (let k = 2; k < EV.br.length - 2; k++) {
-                        const tp = k / 20; if (tp > tE - 1 || !(EV.br[k] > 0.6 * (EV.brMax || 0.13) && EV.br[k] >= EV.br[k - 1] && EV.br[k] > EV.br[k + 1])) continue;      // each time the chest is full: the out-breath rumbles in its throat
-                        voice(tp + 0.1, tp + 2.1, t => { const u = (t - tp - 0.1) / 2; return [41 - 7 * u, Math.pow(Math.sin(Math.PI * u), 1.5) * 0.2, 0.06 + 0.05 * u]; }, 1.2 * X.growl * Y.breath / 0.7, panR, RED_V, 0.4);
+                        const tp = k / 20; if (tp > tE - 1 || !(EV.br[k] > 0.6 * (EV.brMax || 0.13) && EV.br[k] >= EV.br[k - 1] && EV.br[k] > EV.br[k + 1])) continue;
+                        voice(tp + 0.1, tp + 2.1, t => { const u = clamp((t - tp - 0.1) / 2, 0, 1); return [41 - 7 * u, Math.pow(Math.max(0, Math.sin(Math.PI * u)), 1.5) * 0.2, 0.06 + 0.05 * u]; }, 1.2 * X.growl * Y.breath / 0.7, panR, RED_V, 0.4);
                     }
                 }
                 if (EV) {
                     const keep = [L.slice(), R.slice()], a = Math.max(0, ix(R1 - 0.3)), b = Math.min(N, ix(STR[0] + 0.12)), kS = [S.slice(a, b), S2.slice(a, b)];
                     valley();
-                    // the valley holds its breath before the thunder: whatever was added inside that second is held back with the rest
                     (() => { const h = i => 1 - 0.96 * win(i / SR, R1 - 0.2, STR[0] + 0.06, 0.35, 0.06); for (let i = a; i < b; i++) { const g = h(i); L[i] = keep[0][i] + (L[i] - keep[0][i]) * g; R[i] = keep[1][i] + (R[i] - keep[1][i]) * g; S[i] = kS[0][i - a] + (S[i] - kS[0][i - a]) * g; S2[i] = kS[1][i - a] + (S2[i] - kS[1][i - a]) * g; } })();
-                    // how much these sounds add to the film's energy, weighed as the master weighs it: the master's level is set by everything else, so the music plays exactly as loud as it did without them
                     (() => { const ha = bq('hp', 27, 0.7), hb = bq('hp', 27, 0.7), sa = bq('hs', 3000, 4), sb = bq('hs', 3000, 4); for (let i = 0; i < N; i++) { const l = sa.p(ha.p(L[i] - keep[0][i])), r = sb.p(hb.p(R[i] - keep[1][i])); ssNew += l * l + r * r; } })();
                     lap('world');
                 }
             }
 
-            // ================= room + master =================
-            // feedback delay network; its decay is pulled short twice so that the valley can truly fall silent: after the roar, and in the gap before the blast
+            // ================= Room (Mughal Palace Courtyard & Valley Echo) + Master Limiter =================
             {
                 const D = [1499, 1889, 2311, 2749, 3203, 3671, 4127, 4603], n = 8, bufs = D.map(d => new Float32Array(d)), ixs = new Int32Array(n), lpS = new Float32Array(n), v = new Float32Array(n), pre = Math.floor(0.028 * SR);
                 const gset = rt => D.map(d => Math.pow(10, -3 * d / (SR * rt))), gN = gset(3.4), gO = gset(0.32), gB = gset(0.07), o0 = ix(R1 - 0.05), o1 = ix(STR[0] - 0.03), b0 = ix(CUT - 0.015), b1 = ix(tBl - 0.004), hpL = bq('hp', 150, 0.7), hpR = bq('hp', 150, 0.7);
@@ -885,20 +1091,16 @@ import { Film } from './film.js';
                     const inp = i >= pre ? S[i - pre] * 0.25 : 0, sdi = i >= pre ? S2[i - pre] * 0.25 : 0, g = i >= b0 && i < b1 ? gB : i >= o0 && i < o1 ? gO : gN; let sum = 0;
                     for (let k = 0; k < n; k++) { const y = bufs[k][ixs[k]]; lpS[k] += (y - lpS[k]) * 0.55; v[k] = lpS[k]; sum += v[k]; }
                     sum *= 2 / n; let l = 0, r = 0;
-                    for (let k = 0; k < n; k++) { bufs[k][ixs[k]] = (v[k] - sum) * g[k] + (k & 1 ? inp + sdi : inp - sdi); if (++ixs[k] >= D[k]) ixs[k] = 0; if (k & 1) r += v[k]; else l += v[k]; }      // odd lines feed the right ear, even lines the left
+                    for (let k = 0; k < n; k++) { bufs[k][ixs[k]] = (v[k] - sum) * g[k] + (k & 1 ? inp + sdi : inp - sdi); if (++ixs[k] >= D[k]) ixs[k] = 0; if (k & 1) r += v[k]; else l += v[k]; }
                     L[i] += hpL.p(l) * 0.6; R[i] += hpR.p(r) * 0.6;
                 }
             }
             lap('room');
-            // DC block, a very gentle top roll-off, level, fades, the cut before the blast, look-ahead limiter
             {
                 const a = bq('lp', 15000, 0.7), b = bq('lp', 15000, 0.7), ha = bq('hp', 27, 0.7), hb = bq('hp', 27, 0.7), sa = bq('hs', 3000, 4), sb = bq('hs', 3000, 4), look = Math.floor(0.004 * SR); let ss = 0;
                 for (let i = 0; i < N; i++) { const l = sa.p(ha.p(a.p(L[i]))), r = sb.p(hb.p(b.p(R[i]))); L[i] = l; R[i] = r; ss += l * l + r * r; }
                 const pre = P.pre || 0.205 / Math.sqrt(Math.max(ss - ssNew, 0.25 * ss) / (2 * N) + 1e-12); prof.pre = pre; const iE = ix(END), g0 = ix(CUT - 0.006), g1 = ix(tBl);
-                for (let i = 0; i < N; i++) { const t = i / SR; let f = i >= iE ? 0 : sm(0.0, 1.4, t) * (1 - sm(tOut - 0.7, END - 0.05, t)) * pre; if (i >= g0 && i < g1) f *= t < tBl - 0.0035 ? 1 - sm(CUT - 0.006, CUT + 0.004, t) : sm(tBl - 0.0035, tBl - 0.0003, t); let l = L[i] * f, r = R[i] * f; const al = l < 0 ? -l : l, ar = r < 0 ? -r : r; if (al > 0.55) l = (l < 0 ? -1 : 1) * (0.55 + 0.45 * Math.tanh((al - 0.55) / 0.45)); if (ar > 0.55) r = (r < 0 ? -1 : 1) * (0.55 + 0.45 * Math.tanh((ar - 0.55) / 0.45)); L[i] = l; R[i] = r; }      // soft clip: only the tips of transients
-                // limiter: gain = the smallest gain needed over the next 4 ms, released slowly, then box-smoothed over 4 ms so it never steps
-                // It works on what the wave reaches BETWEEN samples too (four-times interpolation, computed only where it is loud; kept in S, which the room no longer needs),
-                // so a player that resamples the buffer (a 48 kHz output device) is never driven over full scale by the densest hits.
+                for (let i = 0; i < N; i++) { const t = i / SR; let f = i >= iE ? 0 : sm(0.0, 1.4, t) * (1 - sm(tOut - 0.7, END - 0.05, t)) * pre; if (i >= g0 && i < g1) f *= t < tBl - 0.0035 ? 1 - sm(CUT - 0.006, CUT + 0.004, t) : sm(tBl - 0.0035, tBl - 0.0003, t); let l = L[i] * f, r = R[i] * f; const al = l < 0 ? -l : l, ar = r < 0 ? -r : r; if (al > 0.55) l = (l < 0 ? -1 : 1) * (0.55 + 0.45 * Math.tanh((al - 0.55) / 0.45)); if (ar > 0.55) r = (r < 0 ? -1 : 1) * (0.55 + 0.45 * Math.tanh((ar - 0.55) / 0.45)); L[i] = l; R[i] = r; }
                 {
                     const K = 8, ker = [0.25, 0.5, 0.75].map(f => { const h = new Float64Array(2 * K); let sum = 0; for (let k = 0; k < 2 * K; k++) { const x = k - (K - 1) - f; h[k] = Math.sin(Math.PI * x) / (Math.PI * x) * (0.5 + 0.5 * Math.cos(Math.PI * x / K)); sum += h[k]; } for (let k = 0; k < 2 * K; k++) h[k] /= sum; return h; });
                     for (let i = 0; i < N; i++) { const a = L[i] < 0 ? -L[i] : L[i], b = R[i] < 0 ? -R[i] : R[i]; S[i] = a > b ? a : b; }
@@ -1103,8 +1305,8 @@ import { Film } from './film.js';
                     const V = THREE.Vector3, cam = new V(), at = new V(), f = new V(), r = new V(), d = new V(), h = new V(), up = new V(0, 1, 0), T = Film.T, DUR = Film.DUR, A = Film.A, HZ = 20;
                     let th = 1; const aim = t => { Film.camAt(t, cam); Film.lookAt(t, at); f.subVectors(at, cam).normalize(); r.crossVectors(f, up).normalize(); th = Math.tan(Film.fovAt(t) * Math.PI / 360) * 16 / 9; };
                     const sx = p => { d.subVectors(p, cam); const z = d.dot(f), x = z > 1 ? d.dot(r) / (z * th) : 0; return x === x ? Math.max(-1.5, Math.min(1.5, x)) : 0; };
-                    const n = DUR * HZ + 1, hr = new Float32Array(n), hw = new Float32Array(n), CF = new Float32Array(n * 10);      // CF: the film camera at each of those moments (position, forward, right, tan of half its field)
-                    for (let i = 0; i < n; i++) { const t = i / HZ; aim(t); hr[i] = sx(Dragon.red.headAt(t, h)); hw[i] = sx((t < 57.1 ? (Dragon.snake3 || Dragon.white) : Dragon.white).headAt(t, h)); CF.set([cam.x, cam.y, cam.z, f.x, f.y, f.z, r.x, r.y, r.z, th], i * 10); }
+                    const n = DUR * HZ + 1, hr = new Float32Array(n), hw = new Float32Array(n), hs = new Float32Array(n), CF = new Float32Array(n * 10);      // CF: the film camera at each of those moments (position, forward, right, tan of half its field)
+                    for (let i = 0; i < n; i++) { const t = i / HZ; aim(t); hr[i] = sx(Dragon.red.headAt(t, h)); hw[i] = sx((t < 57.1 ? (Dragon.snake3 || Dragon.white) : Dragon.white).headAt(t, h)); hs[i] = sx((Dragon.snake3 || Dragon.white).headAt(t, h)); CF.set([cam.x, cam.y, cam.z, f.x, f.y, f.z, r.x, r.y, r.z, th], i * 10); }
                     const sxi = (k, x, y, z) => { const o = k * 10, dx = x - CF[o], dy = y - CF[o + 1], dz = z - CF[o + 2], zz = dx * CF[o + 3] + dy * CF[o + 4] + dz * CF[o + 5], v = zz > 1 ? (dx * CF[o + 6] + dy * CF[o + 7] + dz * CF[o + 8]) / (zz * CF[o + 9]) : 0; return v === v ? Math.max(-1.5, Math.min(1.5, v)) : 0; };      // screen x of a world point through the camera of sample k
                     let ev = null; try { ev = world(CF, HZ, sxi); } catch (e) { }
                     const at1 = (t, p) => { aim(t); return sx(p); };
@@ -1136,7 +1338,7 @@ import { Film } from './film.js';
                         }
                     } catch (e) { }
                     const ax = {}; for (const [k, t] of [['clash1', T.CLASH1], ['clash2', T.CLASH2], ['splash', T.SPLASH], ['boltHit', T.BOLT + 0.12]]) if (A[k]) ax[k] = at1(t, A[k]);
-                    return { hx: { r: hr, w: hw, hz: HZ }, exits, cloud, ax, hit: typeof FX !== 'undefined' && FX.HIT === +FX.HIT ? FX.HIT : null, ev };      // hit: the bolt's flight time, if FX ever exports it
+                    return { hx: { r: hr, w: hw, s: hs, hz: HZ }, exits, cloud, ax, hit: typeof FX !== 'undefined' && FX.HIT === +FX.HIT ? FX.HIT : null, ev };      // hit: the bolt's flight time, if FX ever exports it
                 } catch (e) { return null; }
             }
             // QA: ?stem=music | sfx | new (only the sounds added for the played world) | old (the film without them), ?solo=family[,family] (see Y in synth) and ?pre=gain export one layer at a fixed level
@@ -1252,7 +1454,7 @@ import { Film } from './film.js';
                 for (let i = 0; i < n; i++) { b.setInt16(44 + i * 4, Math.max(-1, Math.min(1, d[0][i])) * 32767, true); b.setInt16(46 + i * 4, Math.max(-1, Math.min(1, d[1][i])) * 32767, true); }
                 const u = new Uint8Array(b.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s);
             }
-            if (typeof window !== 'undefined') window.__exportWav = wav;
+            window.__exportWav = wav;
             // sync: QA readout { err: seconds the sound is ahead of the picture, ts: output timestamps in use, launches, state, latency }
             return { start, play, time, toggle, pause, resume, params, get running() { return !!ctx && ctx.state === 'running'; }, get paused() { return held; }, get sync() { return { err, ts: tsOk, launches: nLaunch, state: ctx ? ctx.state : 'none', lat, live, ct: live ? mod(aOff + ctx.currentTime - aStart - lat) : -1 }; }, get playing() { return playing; }, get muted() { return muted; } };
         })();
