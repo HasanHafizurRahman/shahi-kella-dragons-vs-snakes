@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>শাহী কেল্লা · Ruined Mughal Palace — Black Serpents vs. Dragons</title>
+    <title>শাহী কেল্লা · Ruined Mughal Palace — Royal King Cobras (রাজগোখরা) vs. Dragons in Bengali-Indian Hills</title>
     <style>
         html,
         body {
@@ -126,13 +126,13 @@
 </head>
 
 <body><canvas id="c"></canvas>
-    <div id="ld"><b>শাহী মহল</b><i>Ruined Mughal-Sultani Fortress Palace · Black Serpents vs. Dragons</i>
+    <div id="ld"><b>শাহী মহল</b><i>Ruined Mughal-Sultani Fortress Palace · Royal King Cobras (রাজগোখরা) vs. Dragons</i>
         <div id="bar"><s></s></div>
         <div id="st">waking</div>
     </div>
     <div id="snd">click for sound</div>
-    <div id="cr">pure three.js · pitch-black 2-headed & 3-headed serpents vs. crimson & white dragons · ruined
-        mughal-sultani & jamindar palace architecture</div>
+    <div id="cr">pure three.js · giant royal king cobras (ophiophagus hannah · ফণা তোলা রাজগোখরা) vs. crimson & white
+        dragons · bengali-indian hill tracts, ghats & ruined mughal-sultani palace</div>
     <script>var THREE = (function () {
             'use strict'; var __core = (function () {
                 'use strict';/**
@@ -1790,10 +1790,11 @@ vec3 clWind(vec3 wp, float w){
             const P = new THREE.Vector3();
             // ---------- the block field (keep in step with GLSL_BLOCKS below) ----------
             const hI = (i, j, k) => { let n = Math.imul(i, 0x27d4eb2d) ^ Math.imul(j, 0x165667b1) ^ Math.imul(k, 0x9e3779b1); n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d); n = Math.imul(n ^ (n >>> 12), 0x297a2d39); return (n ^ (n >>> 15)) >>> 0; };
-            // S: column width, H: bed thickness (metres). LV0 lives in the mesh only (buttresses), LV1 in mesh and shader, LV2 mostly in the shader
-            const LV0 = { S: 12, H: 30, seed: 5 }, LV1 = { S: 3.6, H: 9, seed: 11 }, LV2 = { S: 1.15, H: 2.7, seed: 23 };
-            const A1 = 0.80, T1 = 0.20, A2 = 0.20, T2 = 0.26;       // nominal step height (m) and face tilt (slope) the shader assumes
-            const dipF = (x, z) => 0.07 * x - 0.04 * z + 1.6 * Math.sin(x * 0.043 + 0.5) + 1.3 * Math.sin(z * 0.051 + 2.1);   // the beds dip gently
+            // S: broad hillside ridge width, H: stepped Deccan/Ghats/Bandarban sedimentary & basalt bed thickness (metres).
+            // Wider S and lower H replace vertical Chinese karst columns with sweeping Bengali/Indian horizontally-bedded hill strata & ledges.
+            const LV0 = { S: 19, H: 13.5, seed: 5 }, LV1 = { S: 6.2, H: 4.2, seed: 11 }, LV2 = { S: 1.95, H: 1.35, seed: 23 };
+            const A1 = 0.72, T1 = 0.16, A2 = 0.18, T2 = 0.22;       // stepped hillside ledges and natural subcontinental slope tilt
+            const dipF = (x, z) => 0.045 * x - 0.032 * z + 3.1 * Math.sin(x * 0.026 + 0.5) + 2.5 * Math.sin(z * 0.031 + 2.1) + 1.35 * Math.cos((x - z) * 0.018);   // undulating Bengali-Indian hill fold strata
             let lBt = 0, lBb = 0, tX = 0, tZ = 0;
             function lyr(cx, cz, yd, H, seed) {                      // bed index of column (cx,cz) at height yd; distances to its bed planes in lBt/lBb
                 const n = hI(cx, cz, seed + 1), Hc = H * (0.7 + 0.6 * (n & 0xffff) / 65536), ly = yd / Hc + (n >>> 16) / 65536 * 7, fl = Math.floor(ly), lf = ly - fl;
@@ -1824,7 +1825,7 @@ vec3 clWind(vec3 wp, float w){
             const f3 = x => x.toFixed(4);
             const GLSL_BLOCKS = /* glsl */`
     uint rkH(int x, int y, int z){ uint n = uint(x)*0x27d4eb2du ^ uint(y)*0x165667b1u ^ uint(z)*0x9e3779b1u; n = (n ^ (n >> 15u)) * 0x2c1b3c6du; n = (n ^ (n >> 12u)) * 0x297a2d39u; return n ^ (n >> 15u); }
-    float rkDip(vec2 p){ return 0.07 * p.x - 0.04 * p.y + 1.6 * sin(p.x * 0.043 + 0.5) + 1.3 * sin(p.y * 0.051 + 2.1); }
+    float rkDip(vec2 p){ return 0.045 * p.x - 0.032 * p.y + 3.1 * sin(p.x * 0.026 + 0.5) + 2.5 * sin(p.y * 0.031 + 2.1) + 1.35 * cos((p.x - p.y) * 0.018); }
     int rkLyr(ivec2 c, float yd, float H, int seed, out float bt, out float bb){ uint n = rkH(c.x, c.y, seed + 1); float Hc = H * (0.7 + 0.6 * float(n & 0xffffu) / 65536.0);
       float ly = yd / Hc + float(n >> 16u) / 65536.0 * 7.0, fl = floor(ly), lf = ly - fl; bt = (1.0 - lf) * Hc; bb = lf * Hc; return int(fl); }
     float rkOff(ivec2 c, int li, int seed, out vec2 tilt){ uint n = rkH(c.x + li * 57, c.y + li * 113, seed + 3);
@@ -1873,12 +1874,12 @@ vec3 clWind(vec3 wp, float w){
             // ---------- mesh displacement in undisplaced space, so neighbouring pieces agree. Leaves the smooth part in dMac ----------
             let dMac = 0;
             function disp(x, y, z, amp, o) {
-                const big = NZ.ridged(x * 0.014 + 3, y * 0.009, z * 0.014, 3), s0 = o.s0 || 1, dip = dipF(x, z);
-                dMac = amp * (big - 0.45) * 0.8 + blk(x, y, z, LV0, s0, amp * 0.62, 0.07, 2.6 * s0, dip);       // rounded buttresses and big setbacks
+                const big = NZ.ridged(x * 0.012 + 3, y * 0.014, z * 0.012, 3), gully = NZ.fbm(x * 0.024 + 7, y * 0.007, z * 0.024, 2), s0 = o.s0 || 1, dip = dipF(x, z);
+                dMac = amp * ((big - 0.42) * 0.92 + gully * 0.34) + blk(x, y, z, LV0, s0, amp * 0.52, 0.05, 3.2 * s0, dip);       // sweeping subcontinental ridge ribs, monsoon gullies & stepped hillside spurs
                 let d = dMac;
                 const ak = Math.min(1, amp / 1.9);
-                if (o.l1 !== false) d += blk(x, y, z, LV1, 1, amp * (A1 / 1.9), T1 * ak, o.band ?? 0.35, dip);       // jointed blocks with hard steps
-                if (o.l2) d += blk(x, y, z, LV2, 1, A2 * ak, T2 * ak, 0.14, dip);
+                if (o.l1 !== false) d += blk(x, y, z, LV1, 1, amp * (A1 / 1.9), T1 * ak, o.band ?? 0.45, dip);       // bedded sandstone/basalt hillside ledges
+                if (o.l2) d += blk(x, y, z, LV2, 1, A2 * ak, T2 * ak, 0.18, dip);
                 return d;
             }
             // monotonic remap s -> u that spends mesh rows where den() is high
@@ -2021,42 +2022,78 @@ vec3 clWind(vec3 wp, float w){
                 }
                 return moved;
             }
-            // ---- pieces ----
+            // ---- pieces: Bengali & Indian Subcontinental Mountains (Bandarban / Sylhet-Meghalaya / Western Ghats / Himalayan Foothills) ----
             function spire(cx, cz, y0, y1, r0, r1, seed, nu, nv, o = {}) {
-                const lean = o.lean || [0, 0], crown = o.crown ?? r1 * 0.55;
+                const lean = o.lean || [0, 0], isMain = o.tag === 'main', crown = o.crown ?? (isMain ? r1 * 0.55 : r1 * 1.35);
+                const broad = o.broad ?? (isMain ? 1.0 : 2.35), topBroad = o.topBroad ?? (isMain ? 1.0 : 0.42);
+                const rx = o.rx ?? (isMain ? 1.0 : 1.48), rz = o.rz ?? (isMain ? 1.0 : 0.86), yaw = o.yaw ?? (isMain ? 0 : seed * 1.73);
+                const cyw = Math.cos(yaw), syw = Math.sin(yaw);
                 return surf(nu, nv, (u, v, out) => {
                     const th = u * TAU, cap = 0.90, h = Math.min(v / cap, 1), y = lerp(y0, y1, h);
                     const c = Math.cos(th), s = Math.sin(th);
-                    // stepped pillar: shoulders drop away in a few setbacks, deeper on one side than the other
-                    let r = lerp(r0, r1, Math.pow(h, 0.7)) * (1 + 0.30 * Math.pow(1 - h, 6));
-                    for (let k = 0; k < 4; k++) { const hk = 0.30 + 0.17 * k + 0.07 * NZ.n3(seed * 3.1 + k, c * 0.8, s * 0.8); r *= 1 - (0.085 + 0.07 * NZ.n3(seed * 5.3 + k * 2.7, c * 1.1, s * 1.1)) * sm(hk - 0.008, hk + 0.008, h); }
-                    // angular plan: soft polygon that turns slowly with height
-                    const sides = 5 + ((seed * 7) | 0) % 3, pa = th * sides + seed * 9 + y * 0.012; r *= 1 - 0.07 * Math.pow(Math.abs(Math.sin(pa * 0.5)), 0.7) + 0.035;
-                    r *= 1 + 0.16 * NZ.n3(c * 1.2 + seed, y * 0.014, s * 1.2) + 0.08 * NZ.n3(c * 2.9 + seed, y * 0.04, s * 2.9 + 4);
-                    const ax = cx + lean[0] * h * h + NZ.n3(seed, y * 0.012, 3) * 3.0 * h, az = cz + lean[1] * h * h + NZ.n3(seed + 9, y * 0.012, 7) * 3.0 * h;
+                    let r, ex = c, ez = s;
+                    if (isMain) {
+                        // Main peak where the Crimson Dragon coils (y = 55..100): preserve exact upper shaft coil geometry for Seat.drop,
+                        // while flaring the lower base (h < 0.44) into sweeping Indian/Bengali mountain spurs and ridges
+                        r = lerp(r0, r1, Math.pow(h, 0.7)) * (1 + 0.30 * Math.pow(1 - h, 6));
+                        const baseFlare = Math.max(0, 1 - h / 0.45);
+                        r *= 1 + 0.72 * Math.pow(baseFlare, 2.1) * (0.65 + 0.35 * Math.cos(th * 4 + 0.7));
+                        for (let k = 0; k < 4; k++) { const hk = 0.30 + 0.17 * k + 0.07 * NZ.n3(seed * 3.1 + k, c * 0.8, s * 0.8); r *= 1 - (0.075 + 0.06 * NZ.n3(seed * 5.3 + k * 2.7, c * 1.1, s * 1.1)) * sm(hk - 0.012, hk + 0.012, h); }
+                        const sides = 5 + ((seed * 7) | 0) % 3, pa = th * sides + seed * 9 + y * 0.012; r *= 1 - 0.065 * Math.pow(Math.abs(Math.sin(pa * 0.5)), 0.7) + 0.032;
+                        r *= 1 + 0.16 * NZ.n3(c * 1.2 + seed, y * 0.014, s * 1.2) + 0.08 * NZ.n3(c * 2.9 + seed, y * 0.04, s * 2.9 + 4);
+                    } else {
+                        // Bengali & Indian Mountain Peak / Massif: broad sweeping conical-pyramidal slope, radiating foothill spurs (শৈলশিরা),
+                        // monsoon-carved gullies (গিরিখাত), and elongated undulating ridge shoulders instead of Chinese vertical karst pillars
+                        const hCurve = Math.pow(h, 0.86);
+                        r = lerp(r0 * broad, r1 * topBroad, hCurve) * (1 + 0.75 * Math.pow(1 - h, 2.2));
+                        // 3 to 5 radiating mountain ridge spurs & deep monsoon valleys between them
+                        const spurA = Math.cos(th * 3 + seed * 2.1 + h * 0.55), spurB = Math.cos(th * 5 - seed * 1.4 - h * 0.7), ridgeAsym = Math.cos(th - seed * 0.9);
+                        const gully = Math.pow(Math.max(0, -Math.sin(th * 4 + seed * 3.7 + h * 0.8)), 1.6);
+                        r *= 1 + (0.32 * spurA + 0.18 * spurB + 0.20 * ridgeAsym - 0.22 * gully) * (1 - 0.50 * h * h);
+                        // Soft natural subcontinental hillside terraces (Deccan / Bandarban strata)
+                        r *= 1 - 0.045 * Math.sin(h * 18.0 + seed * 2.0 + 0.6 * spurA) * (1 - h * 0.6);
+                        r *= 1 + 0.18 * NZ.n3(c * 1.1 + seed, y * 0.011, s * 1.1) + 0.09 * NZ.n3(c * 2.6 + seed, y * 0.028, s * 2.6 + 4);
+                        // Elongate along the ridge axis (rx, rz) and rotate by yaw so peaks form connected Bengali/Indian mountain chains
+                        const lx = c * rx, lz = s * rz;
+                        ex = lx * cyw - lz * syw; ez = lx * syw + lz * cyw;
+                    }
+                    const ax = cx + lean[0] * h * h + NZ.n3(seed, y * 0.010, 3) * 3.2 * h, az = cz + lean[1] * h * h + NZ.n3(seed + 9, y * 0.010, 7) * 3.2 * h;
                     let yy = y;
                     if (v > cap) {
-                        // crown: the columns end at different heights, so the summit is a cluster of flat-topped stubs, not a dome
-                        const k = (v - cap) / (1 - cap); r *= 1 - k; const px = ax + c * r, pz = az + s * r;
-                        const dp = dipF(px, pz), cw = 0.7 * blk(px, y1, pz, LV1, 1, 1, 0, 0.18, dp) + 0.3 * blk(px, y1, pz, LV0, 0.5, 1, 0, 0.5, dp);
-                        yy = y1 + crown * (cw * 0.92 + 0.08) * sm(0, 0.10, k);
+                        const k = (v - cap) / (1 - cap); r *= 1 - k; const px = ax + ex * r, pz = az + ez * r;
+                        if (isMain) {
+                            const dp = dipF(px, pz), cw = 0.7 * blk(px, y1, pz, LV1, 1, 1, 0, 0.18, dp) + 0.3 * blk(px, y1, pz, LV0, 0.5, 1, 0, 0.5, dp);
+                            yy = y1 + crown * (cw * 0.92 + 0.08) * sm(0, 0.10, k);
+                        } else {
+                            // Natural pyramidal / undulating Bengali-Indian mountain crest & weathered peak (no flat cylinder stub)
+                            const ridgeCrest = 0.65 + 0.35 * Math.cos(th * 2 + seed) + 0.30 * NZ.n3(px * 0.06 + seed, 1.7, pz * 0.06);
+                            yy = y1 + crown * (1 - k * k * 0.85) * ridgeCrest * sm(0, 0.08, k);
+                        }
+                    } else if (!isMain) {
+                        // Undulating ridge line along the upper shoulders (পাহাড়ের ঢেউ খেলানো চূড়া)
+                        const shoulderWave = (0.14 * Math.cos(th * 2 + seed * 1.3) + 0.08 * Math.sin(th * 3 - seed * 2.1)) * (y1 - y0) * Math.pow(h, 1.5);
+                        yy += shoulderWave;
                     }
-                    out.set(ax + c * r, yy, az + s * r);
+                    out.set(ax + ex * r, yy, az + ez * r);
                 }, { ord: o.ord ?? 3, wrapU: true, flip: true, amp: o.amp ?? 1.9, tag: o.tag || 'spire', siteN: o.siteN ?? 500, site: o.site, ld: o.ld, l1: o.l1, l2: o.l2, s0: o.s0, band: o.band });
             }
-            // wall following a ground polyline; receding terraces with height. side = +1 faces +x-ish (left wall), -1 faces -x
+            // wall following a ground polyline: shaped into sweeping Bengali-Indian Ghat/Hill-Tract ridge lines, peaks, saddles & spurs
             function wall(path, y0, y1, nu, nv, o = {}) {
                 const pts = path.map(p => new THREE.Vector2(p[0], p[1])), curve = new THREE.SplineCurve(pts), t2 = new THREE.Vector2(), tg = new THREE.Vector2();
-                const lean = o.lean ?? 0.20, side = o.side ?? 1;
+                const lean = o.lean ?? 0.34, side = o.side ?? 1, sd = o.seed || 0;
                 const um = remap(o.uDen || (() => 1)), vm = remap(o.vDen || (() => 1));
                 return surf(nu, nv, (su, sv, out) => {
                     const u = um(su), v = vm(sv);
                     curve.getPoint(u, t2); curve.getTangent(u, tg); const nx = -tg.y * side, nz = tg.x * side;      // outward (toward valley)
-                    const y1v = o.top ? o.top(u) : y1, y = lerp(y0, y1v, v), h = y - y0;
-                    let back = h * lean + 7.0 * sm(0.30, 0.38, v + 0.05 * NZ.n3(u * 9, 2, 0)) + 9.0 * sm(0.58, 0.66, v + 0.05 * NZ.n3(u * 7, 5, 0)) + 14 * sm(0.86, 1.0, v);
-                    back += 6 * NZ.n3(u * 3.1 + (o.seed || 0), v * 2.2, 1.7) + (o.bulge ? o.bulge(u, v) : 0);
+                    // Undulating Bengali/Indian mountain skyline: rolling peaks, curved saddles, and foothills
+                    const ridgeWave = (22 * Math.sin(u * Math.PI * 3.2 + sd) + 14 * Math.cos(u * Math.PI * 5.5 + sd * 1.7) + 9 * NZ.n3(u * 8 + sd, 1.3, 0.7)) * sm(0.05, 0.25, u);
+                    const y1v = (o.top ? o.top(u) : y1) + ridgeWave, y = lerp(y0, y1v, v), h = y - y0;
+                    // Sweeping conical buttress spurs & monsoon ravines cutting down the hillside instead of boxy vertical steps
+                    const spur = (11.5 * Math.sin(u * 26.0 + sd * 2.1 + v * 1.8) + 7.5 * Math.cos(u * 43.0 - v * 2.6 + sd)) * Math.pow(1 - v * 0.65, 1.4) * sm(0.08, 0.88, v);
+                    let back = h * lean + 4.5 * sm(0.26, 0.42, v + 0.06 * NZ.n3(u * 7, 2, 0)) + 6.5 * sm(0.55, 0.72, v + 0.06 * NZ.n3(u * 6, 5, 0)) + 16 * Math.pow(sm(0.75, 1.0, v), 1.6);
+                    back += 6.5 * NZ.n3(u * 3.4 + sd, v * 2.0, 1.7) - spur + (o.bulge ? o.bulge(u, v) : 0);
                     out.set(t2.x - nx * back, y, t2.y - nz * back);
-                }, { ord: 2, flip: side < 0 ? !o.rev : !!o.rev, amp: o.amp ?? 2.8, tag: o.tag || 'wall', siteN: o.siteN ?? 1400, siteArea: true, band: 0.5 });
+                }, { ord: 2, flip: side < 0 ? !o.rev : !!o.rev, amp: o.amp ?? 3.1, tag: o.tag || 'wall', siteN: o.siteN ?? 1400, siteArea: true, band: 0.55 });
             }
             // flat-topped rock mass (terrace / bank): squashed superellipsoid, top clamped to topY. ev < e makes the sides above the waist near-vertical
             function mass(cx, cy, cz, rx, ry, rz, topY, seed, nu = 90, nv = 60, o = {}) {
@@ -2132,12 +2169,13 @@ vec3 clWind(vec3 wp, float w){
         float hA = gTA.b, cA = gTA.a, hB = gTB.b, cB = gTB.a;
         // limestone seen from across a valley: grey, blue-grey where it has stood in the weather longest, pale only where a slab
         // has come away or lichen has crusted it, rust and ochre where iron bleeds out of a bed
+        // Bengali & Indian subcontinental hill rock: warm Vindhyan/Bandarban sandstone & terracotta laterite beds blending into dark Deccan trap basalt
         float age = smoothstep(0.24, 0.68, mix(0.5, gWC.a, face) * 0.50 + vari * 0.34 + (id1 - 0.5) * 0.40 + (hA - 0.45) * 0.20);
-        vec3 rock = mix(vec3(0.395, 0.355, 0.310), vec3(0.185, 0.178, 0.172), age);
-        float och = clamp(gWC.g * (0.60 + 0.90 * (id2 - 0.2)) + gWF.g * 0.84, 0.0, 1.0) * face;
-        rock = mix(rock, rock * vec3(1.40, 0.88, 0.54) + vec3(0.032, 0.010, 0.002), och * 0.60);
+        vec3 rock = mix(vec3(0.435, 0.345, 0.255), vec3(0.195, 0.165, 0.145), age);
+        float och = clamp(gWC.g * (0.65 + 0.90 * (id2 - 0.2)) + gWF.g * 0.88, 0.0, 1.0) * face;
+        rock = mix(rock, rock * vec3(1.48, 0.84, 0.48) + vec3(0.042, 0.014, 0.003), och * 0.68);
         float scar = clamp(max(gWC.b * smoothstep(0.40, 0.62, vari + (id1 - 0.5) * 0.5), gWF.b * 0.85), 0.0, 1.0) * face;
-        rock = mix(rock, mix(vec3(0.56, 0.535, 0.47), vec3(0.40, 0.44, 0.33), smoothstep(0.45, 0.75, age) * step(gWC.b, 0.5)), scar * 0.80);
+        rock = mix(rock, mix(vec3(0.58, 0.49, 0.38), vec3(0.36, 0.43, 0.29), smoothstep(0.45, 0.75, age) * step(gWC.b, 0.5)), scar * 0.80);
         rock *= (0.80 + 0.40 * id1) * (0.88 + 0.24 * id2);
         // relief of the skin: runnels, pits and joints fall dark, worn crests go pale; the screen-sized grain does the same a few pixels across
         rock *= mix(0.92, mix(0.40, 1.14, smoothstep(0.12, 0.62, cA * 0.60 + hA * 0.40)), mix(fl, 1.0, smoothstep(0.5, 0.8, flat1))) * mix(0.66, 1.06, cav);
@@ -2185,8 +2223,8 @@ vec3 clWind(vec3 wp, float w){
           float soilK = smoothstep(0.40, 0.60, gP * 0.62 + (1.0 - hA) * 0.38) * topK;                  // bare earth in the hollows of level ground
           litK = smoothstep(0.46, 0.68, gQ * 0.62 + cB * 0.38);                                          // where the wind drops its leaves
           float slab = smoothstep(0.690, 0.725, hA * 0.72 + cA * 0.18 + gP * 0.10) * topK;             // limestone pavement breaking the surface
-          vec3 mossC = mix(vec3(0.026, 0.074, 0.024), vec3(0.105, 0.175, 0.040), smoothstep(0.25, 0.75, hB * 0.6 + mN * 0.4)) * (0.55 + 0.85 * cB) * (1.0 - 0.45 * face * (1.0 - sprayK));   // cushions: dark in their pits, yellow-green on their crowns
-          vec3 soil = mix(vec3(0.050, 0.032, 0.022), vec3(0.135, 0.090, 0.056), hB) * (0.45 + 0.95 * cB);
+          vec3 mossC = mix(vec3(0.024, 0.088, 0.022), vec3(0.125, 0.215, 0.038), smoothstep(0.22, 0.74, hB * 0.6 + mN * 0.4)) * (0.58 + 0.88 * cB) * (1.0 - 0.38 * face * (1.0 - sprayK));   // lush Bengali-Indian monsoon hill moss & tropical fern green
+          vec3 soil = mix(vec3(0.065, 0.036, 0.020), vec3(0.165, 0.095, 0.048), hB) * (0.45 + 0.95 * cB);
           vec3 grd = mix(mossC, soil, soilK * 0.88);
           grd = mix(grd, vec3(0.23, 0.070, 0.026) * (0.55 + 0.9 * cB), litK * 0.42);                    // seen from far, the leaf drifts are a russet tint
           rock = mix(rock, grd, mk * 0.94 * (1.0 - slab * 0.85));
@@ -2220,18 +2258,35 @@ vec3 clWind(vec3 wp, float w){
                 material();
                 const S = L.main;
                 spire(S.x, S.z, -6, S.top, S.r0, S.r1, 1.3, 290, 390, { siteN: 4500, tag: 'main', lean: [-2, 3], l2: true, crown: 1.9, ord: 4 }); prog(0.12); await tick();
-                spire(-18, -54, -6, 72, 9.0, 4.4, 5.1, 180, 270, { siteN: 2600, lean: [2, -2], l2: true });
-                spire(-3, -41, -6, 45, 5.2, 2.7, 9.4, 130, 190, { siteN: 1500, l2: true });
-                spire(39, -80, -6, 86, 11.5, 5.2, 14.2, 160, 240, { siteN: 2400, lean: [3, 0] });
-                spire(-45, -96, -6, 120, 14, 6.2, 21.7, 150, 230, { siteN: 2400 }); prog(0.3); await tick();
-                // far, hazy peaks: too coarse a mesh for single blocks, so only the big buttresses, scaled up
+                // Mid-valley Bengali/Indian mountain ridges & hill massifs (broad sweeping slopes, connected saddle ridges, and pyramidal peaks)
+                spire(-20, -55, -8, 70, 11.5, 4.8, 5.1, 180, 270, { siteN: 2600, lean: [3, -2], l2: true, broad: 2.1, topBroad: 0.45, rx: 1.55, rz: 0.92, yaw: -0.42, crown: 8.5 });
+                spire(-3, -41, -8, 43, 6.8, 3.2, 9.4, 130, 190, { siteN: 1500, l2: true, broad: 2.0, topBroad: 0.48, rx: 1.45, rz: 0.90, yaw: 0.35, crown: 5.2 });
+                spire(42, -82, -8, 88, 15.0, 6.0, 14.2, 160, 240, { siteN: 2400, lean: [4, -1], broad: 2.4, topBroad: 0.44, rx: 1.65, rz: 0.88, yaw: 0.52, crown: 11.0 });
+                spire(-48, -98, -8, 122, 18.5, 7.2, 21.7, 150, 230, { siteN: 2400, broad: 2.5, topBroad: 0.42, rx: 1.72, rz: 0.86, yaw: -0.58, crown: 14.5 }); prog(0.3); await tick();
+                // Far, hazy Bengali-Indian mountain ranges (Bandarban / Sylhet-Meghalaya / Himalayan Foothill & Western Ghats horizon):
+                // Broad, overlapping undulating mountain massifs and long ridge backs instead of thin vertical Chinese pillars
                 const fr = rng(77);
-                for (let i = 0; i < 14; i++) { const a = lerp(-1.15, 1.15, (i + fr() * 0.7) / 14), d = 230 + fr() * 420; spire(Math.sin(a) * d, -Math.cos(a) * d - 40, -8, 70 + fr() * 150, 16 + fr() * 22, 6 + fr() * 6, 30 + i * 3.3, 56, 80, { site: false, ld: false, amp: 3.5, l1: false, s0: 2.2, ord: 6 }); }
+                for (let i = 0; i < 18; i++) {
+                    const a = lerp(-1.22, 1.22, (i + fr() * 0.65) / 18), d = 220 + fr() * 440;
+                    const rBase = 28 + fr() * 34, rTop = 10 + fr() * 10, pkH = 85 + fr() * 165;
+                    spire(Math.sin(a) * d, -Math.cos(a) * d - 45, -12, pkH, rBase, rTop, 30 + i * 3.3, 64, 84, {
+                        site: false, ld: false, amp: 4.2, l1: false, s0: 2.5, ord: 6,
+                        broad: 2.6 + fr() * 0.8, topBroad: 0.38, rx: 1.85 + fr() * 0.6, rz: 0.78 + fr() * 0.25, yaw: a * 0.85 + (fr() - 0.5) * 0.6, crown: 18 + fr() * 16
+                    });
+                }
                 prog(0.4); await tick();
-                // valley walls: the mesh is finest low down and beside the lens
+                // Valley mountain walls: undulating Bengali-Indian hill-tract skyline with rolling peaks, curved saddles, and sweeping foothill spurs
                 const vDen = v => 1 + 1.6 * Math.exp(-(v / 0.30) * (v / 0.30));
-                wall([[-21, 112], [-23, 70], [-27, 30], [-36, -8], [-44, -50], [-62, -110], [-80, -180]], -5, 150, 470, 260, { side: 1, seed: 2.2, siteN: 12000, tag: 'wallL', vDen, uDen: u => 1 + 1.7 * Math.exp(-Math.pow((u - 0.22) / 0.15, 2)) }); prog(0.6); await tick();
-                wall([[26, 112], [30, 74], [43, 36], [54, 4], [58, -40], [70, -100], [90, -180]], -5, 132, 390, 220, { side: -1, seed: 8.8, siteN: 9000, tag: 'wallR', vDen, uDen: u => 1 + 1.3 * Math.exp(-Math.pow((u - 0.24) / 0.16, 2)), top: u => lerp(30, 98, sm(0.18, 0.66, u)) + 10 * NZ.n3(u * 6, 1, 2) }); prog(0.75); await tick();
+                wall([[-21, 112], [-23, 70], [-27, 30], [-36, -8], [-44, -50], [-62, -110], [-80, -180]], -5, 142, 470, 260, {
+                    side: 1, seed: 2.2, lean: 0.36, siteN: 12000, tag: 'wallL', vDen,
+                    uDen: u => 1 + 1.7 * Math.exp(-Math.pow((u - 0.22) / 0.15, 2)),
+                    top: u => lerp(68, 146, sm(0.05, 0.72, u)) + 18 * Math.sin(u * 14.0 + 0.8) + 12 * NZ.n3(u * 6, 2, 1)
+                }); prog(0.6); await tick();
+                wall([[26, 112], [30, 74], [43, 36], [54, 4], [58, -40], [70, -100], [90, -180]], -5, 132, 390, 220, {
+                    side: -1, seed: 8.8, lean: 0.35, siteN: 9000, tag: 'wallR', vDen,
+                    uDen: u => 1 + 1.3 * Math.exp(-Math.pow((u - 0.24) / 0.16, 2)),
+                    top: u => lerp(34, 118, sm(0.15, 0.70, u)) + 16 * Math.sin(u * 13.0 + 2.4) + 11 * NZ.n3(u * 6, 1, 2)
+                }); prog(0.75); await tick();
                 // gate terrace: cliff across the valley + plateau behind it, notched for the waterfall
                 surf(300, 170, (u, v, out) => {
                     const x = lerp(-52, 60, u), face = 0.52, notch = Math.exp(-(x * x) / 26), zf = L.gateZ + 10 - 0.004 * x * x + 4.2 * NZ.n3(x * 0.05, 1, 4) - notch * 5.5;
@@ -4657,47 +4712,49 @@ vec3 clWind(vec3 wp, float w){
                     whisker: [0.62, 0.74, 0.96], whiskerTip: [0.96, 0.98, 1.0], whiskerEmis: [0.12, 0.19, 0.34],
                     fire: [2.6, 5.2, 9.0], fireCharge: [0.6, 1.3, 2.6], wetDark: 0.70, edgeThru: 0.5
                 },
-                // 2-headed pitch-black Kala Nag / Black King Cobra (emerges from the lake water & left bank, pure bite & constriction)
+                // Giant Black & Amber Banded King Cobra (Ophiophagus hannah · কালনাগিনী / শঙ্খচূড়, emerges from western lake & left ghats)
                 snake2: {
-                    name: 'snake2', HS: 2.50, seed: 314159, env: 1.25, isSnake: true, heads: 2,
-                    body: [0.016, 0.018, 0.022], deep: [0.004, 0.005, 0.007], flank: [0.030, 0.033, 0.040], belly: [0.082, 0.086, 0.098],
-                    crest: [0.038, 0.042, 0.050],
-                    skin: [0.012, 0.014, 0.018], pit: [0.002, 0.002, 0.003], lid: [0.022, 0.025, 0.032],
-                    mouth: [0.38, 0.08, 0.12], gum: [0.52, 0.14, 0.18], tongue: [0.68, 0.04, 0.08],
-                    ivory: [0.96, 0.95, 0.92], ivoryRoot: [0.52, 0.50, 0.46], ivoryEmis: [0.02, 0.02, 0.02],
-                    horn0: [0.014, 0.016, 0.020], horn1: [0.042, 0.046, 0.056], claw: [0.012, 0.014, 0.018], clawTip: [0.055, 0.060, 0.075],
-                    groove: [0.05, 0.05, 0.06],
-                    accent: [0.14, 0.16, 0.21, 0.34],
-                    rim: [0.22, 0.25, 0.32, 0.44],
+                    name: 'snake2', HS: 2.72, seed: 314159, env: 1.35, isSnake: true, isCobra: true, heads: 1,
+                    body: [0.024, 0.025, 0.022], deep: [0.005, 0.005, 0.006], flank: [0.068, 0.058, 0.036], belly: [0.58, 0.44, 0.22],
+                    crest: [0.48, 0.38, 0.18],                     // pale golden-ochre King Cobra chevron crossbands & crown scute highlights
+                    throatGold: [0.82, 0.62, 0.26],                // iconic golden-cream ventral throat of the flared King Cobra hood
+                    skin: [0.016, 0.015, 0.014], pit: [0.002, 0.002, 0.002], lid: [0.032, 0.028, 0.022],
+                    mouth: [0.36, 0.07, 0.10], gum: [0.52, 0.12, 0.16], tongue: [0.18, 0.015, 0.03],
+                    ivory: [0.97, 0.96, 0.92], ivoryRoot: [0.56, 0.50, 0.42], ivoryEmis: [0.03, 0.03, 0.02],
+                    horn0: [0.018, 0.016, 0.014], horn1: [0.052, 0.046, 0.038], claw: [0.012, 0.014, 0.018], clawTip: [0.055, 0.060, 0.075],
+                    groove: [0.06, 0.05, 0.04],
+                    accent: [0.38, 0.30, 0.16, 0.38],
+                    rim: [0.46, 0.38, 0.22, 0.52],
                     ember: [0.0, 0.0, 0.0], flesh: [0.0, 0.0, 0.0],
-                    self: [0.004, 0.005, 0.007],
-                    pearl: [0.12, 0.15, 0.24, 0.28],
+                    self: [0.006, 0.005, 0.004],
+                    pearl: [0.22, 0.19, 0.12, 0.32],
                     mane: [[0.008, 0.009, 0.012], [0.018, 0.020, 0.026], [0.034, 0.038, 0.048]], maneEmis: 0.0, maneRim: [0, 0, 0], maneSelf: [0, 0, 0], maneSpec: 0.02, maneThru: 0.0, maneLen: 0.0, maneHang: 0.9,
-                    frill: [[0.008, 0.009, 0.012], [0.018, 0.020, 0.026], [0.034, 0.038, 0.048]], frillEmis: 0.0, frillSelf: [0, 0, 0], frillThru: 0.0, hornSelf: [0, 0, 0],
-                    eye: [[0.88, 0.12, 0.04], [1.0, 0.48, 0.08]], eyeRing: [1.0, 0.74, 0.22], sclera: [0.02, 0.01, 0.01],
+                    frill: [[0.020, 0.018, 0.014], [0.16, 0.12, 0.06], [0.52, 0.40, 0.20]], frillEmis: 0.02, frillSelf: [0.01, 0.008, 0.004], frillThru: 0.22, hornSelf: [0, 0, 0],
+                    eye: [[0.55, 0.32, 0.04], [0.96, 0.68, 0.14]], eyeRing: [1.0, 0.84, 0.32], sclera: [0.03, 0.02, 0.01],
                     whisker: [0, 0, 0], whiskerTip: [0, 0, 0], whiskerEmis: [0, 0, 0],
-                    fire: [0, 0, 0], fireCharge: [0, 0, 0], wetDark: 0.42, edgeThru: 0.05
+                    fire: [0, 0, 0], fireCharge: [0, 0, 0], wetDark: 0.44, edgeThru: 0.08
                 },
-                // 3-headed pitch-black Kaliya Nag / Obsidian King Viper (emerges from the right bank & lake water, pure bite & constriction)
+                // Giant Emperor Royal King Cobra (Ophiophagus hannah · রাজগোখরা, emerges from eastern lake & right ghats with massive flared hood)
                 snake3: {
-                    name: 'snake3', HS: 2.45, seed: 271828, env: 1.25, isSnake: true, heads: 3,
-                    body: [0.015, 0.014, 0.017], deep: [0.004, 0.004, 0.005], flank: [0.028, 0.026, 0.032], belly: [0.076, 0.072, 0.082],
-                    crest: [0.036, 0.034, 0.042],
-                    skin: [0.012, 0.011, 0.014], pit: [0.002, 0.002, 0.003], lid: [0.020, 0.019, 0.024],
-                    mouth: [0.40, 0.08, 0.12], gum: [0.54, 0.14, 0.18], tongue: [0.64, 0.04, 0.08],
-                    ivory: [0.97, 0.95, 0.92], ivoryRoot: [0.54, 0.50, 0.46], ivoryEmis: [0.02, 0.02, 0.02],
-                    horn0: [0.014, 0.013, 0.016], horn1: [0.040, 0.038, 0.046], claw: [0.012, 0.010, 0.015], clawTip: [0.052, 0.048, 0.062],
-                    groove: [0.05, 0.045, 0.055],
-                    accent: [0.15, 0.14, 0.18, 0.35],
-                    rim: [0.24, 0.22, 0.28, 0.45],
+                    name: 'snake3', HS: 2.85, seed: 271828, env: 1.40, isSnake: true, isCobra: true, heads: 1,
+                    body: [0.020, 0.018, 0.015], deep: [0.004, 0.004, 0.004], flank: [0.062, 0.048, 0.028], belly: [0.64, 0.48, 0.22],
+                    crest: [0.56, 0.42, 0.18],                     // golden-ivory King Cobra chevron bands & spectacle hood markings
+                    throatGold: [0.88, 0.66, 0.25],                // rich golden-amber ventral hood throat with jet-black transverse bands
+                    skin: [0.014, 0.012, 0.010], pit: [0.002, 0.002, 0.002], lid: [0.028, 0.024, 0.018],
+                    mouth: [0.38, 0.07, 0.10], gum: [0.54, 0.13, 0.16], tongue: [0.16, 0.012, 0.025],
+                    ivory: [0.98, 0.96, 0.92], ivoryRoot: [0.58, 0.52, 0.42], ivoryEmis: [0.03, 0.03, 0.02],
+                    horn0: [0.016, 0.014, 0.012], horn1: [0.048, 0.042, 0.034], claw: [0.012, 0.010, 0.015], clawTip: [0.052, 0.048, 0.062],
+                    groove: [0.05, 0.045, 0.038],
+                    accent: [0.44, 0.34, 0.16, 0.42],
+                    rim: [0.54, 0.42, 0.22, 0.56],
                     ember: [0.0, 0.0, 0.0], flesh: [0.0, 0.0, 0.0],
-                    self: [0.004, 0.004, 0.005],
-                    pearl: [0.14, 0.12, 0.20, 0.26],
+                    self: [0.006, 0.005, 0.004],
+                    pearl: [0.26, 0.20, 0.11, 0.34],
                     mane: [[0.007, 0.006, 0.008], [0.016, 0.015, 0.020], [0.032, 0.030, 0.038]], maneEmis: 0.0, maneRim: [0, 0, 0], maneSelf: [0, 0, 0], maneSpec: 0.02, maneThru: 0.0, maneLen: 0.0, maneHang: 0.9,
-                    frill: [[0.007, 0.006, 0.008], [0.016, 0.015, 0.020], [0.032, 0.030, 0.038]], frillEmis: 0.0, frillSelf: [0, 0, 0], frillThru: 0.0, hornSelf: [0, 0, 0],
-                    eye: [[0.92, 0.20, 0.02], [1.0, 0.62, 0.10]], eyeRing: [1.0, 0.80, 0.26], sclera: [0.02, 0.01, 0.01],
+                    frill: [[0.018, 0.015, 0.012], [0.18, 0.13, 0.06], [0.58, 0.44, 0.20]], frillEmis: 0.02, frillSelf: [0.01, 0.008, 0.004], frillThru: 0.24, hornSelf: [0, 0, 0],
+                    eye: [[0.62, 0.34, 0.03], [1.0, 0.72, 0.14]], eyeRing: [1.0, 0.88, 0.36], sclera: [0.03, 0.02, 0.01],
                     whisker: [0, 0, 0], whiskerTip: [0, 0, 0], whiskerEmis: [0, 0, 0],
-                    fire: [0, 0, 0], fireCharge: [0, 0, 0], wetDark: 0.40, edgeThru: 0.05
+                    fire: [0, 0, 0], fireCharge: [0, 0, 0], wetDark: 0.42, edgeThru: 0.08
                 },
             };
             const sy = (f, k, cy = 0) => (x, y, z) => f(x, cy + (y - cy) / k, z) * k;
@@ -5036,34 +5093,79 @@ varying vec2 vQ;
                 up.push({ g: gum(UF, xU, 0.05, z => ymW(z) + 0.030, 0.050), cls: 1, t0: 0.5, t1: 0.5 }); lo.push({ g: gum(LF, xL, 0.15, z => ymW(z) - 0.108, 0.046), cls: 1, t0: 0.5, t1: 0.5 });
                 share.mouth = { up: mergeToned(up), lo: mergeToned(lo) }; stamp('mouth', t0); return share.mouth;
             }
-            // ---------- TRUE SERPENT HEAD SCULPT & HYPODERMIC FANGS (for snake2 & snake3) ----------
-            // A real pit-viper / anaconda skull: wide flat triangular back (venom glands), low sleek snout, sharp supraocular brow scales,
-            // loreal heat-sensing pits between eye and nostril, smooth chin (zero beard bumps), and long curved front hypodermic fangs.
-            const SEYE = [0.58, 0.26, 0.95], SGAZE = [0.76, 0.06, 0.64];
+            // ---------- ROYAL KING COBRA (OPHIOPHAGUS HANNAH · রাজগোখরা) HEAD SCULPT, CROWN SCUTES & PROTEROGLYPHOUS FANGS ----------
+            // Authentic King Cobra anatomy: noble oblong-oval elapid cranium with large symmetrical parietal/frontal/prefrontal crown shield plates,
+            // fierce overhanging supraocular brow ridges, blunt rounded rostral scale with lingual notch, cranio-cervical hood flare base, and fixed front fangs.
+            const SEYE = [0.56, 0.27, 1.02], SGAZE = [0.74, 0.05, 0.67];
             function sculptSnake() {
                 if (share.scSnake) return share.scSnake;
-                const { SU, SUB, sph, ell, cone, lock } = SD, ab = f => (x, y, z) => f(x < 0 ? -x : x, y, z);
-                // Flat, wide triangular viper cranium (wide temporal venom glands at z = -0.55, tapering cleanly to a blunt rounded viper snout at z = 2.85)
-                const gland = ell(0.76, -0.02, -0.45, 0.62, 0.34, 0.95);
-                const cranium = ell(0, 0.04, -0.45, 0.96, 0.46, 1.15);
-                const snout = sy(cone(0, -0.02, 0.05, 0, -0.10, 2.65, 0.82, 0.34), 0.56, -0.06);
-                const muzzle = ell(0, -0.06, 2.75, 0.35, 0.18, 0.30);
-                const supra = lock([0.36, 0.30, 1.38], [0.64, 0.42, 0.92], [0.86, 0.30, 0.20], 0.16, 0.11); // supraocular scale plate overhanging the eye
-                const nasal = ell(0.26, 0.08, 2.68, 0.12, 0.10, 0.18);
-                const nostril = ell(0.28, 0.09, 2.74, 0.048, 0.055, 0.09);
-                const lorealPit = ell(0.42, 0.02, 1.95, 0.065, 0.065, 0.10); // viper heat-sensing loreal pit between eye and nostril
-                let up = SU(0.14, cranium, gland, snout, muzzle, supra, nasal);
-                up = SUB(up, sph(SEYE[0], SEYE[1], SEYE[2], RS * 0.95), 0.025);
+                const { SU, SUB, U, sph, ell, cone, lock } = SD, ab = f => (x, y, z) => f(x < 0 ? -x : x, y, z);
+                // Oblong-oval King Cobra cranium transitioning at the occiput into the flaring cervical hood neck
+                const cranium = ell(0, 0.06, -0.40, 0.86, 0.48, 1.22);
+                const temple = ell(0.64, -0.01, -0.38, 0.48, 0.34, 0.98);
+                const hoodNeckBase = sy(cone(0, 0.0, -0.45, 0, -0.04, -1.78, 0.82, 1.38), 0.42, -0.02); // wide flattened cervical hood transition behind skull
+                const snout = sy(cone(0, 0.02, 0.10, 0, -0.08, 2.68, 0.78, 0.38), 0.62, -0.04);
+                const muzzle = ell(0, -0.04, 2.78, 0.38, 0.21, 0.32); // blunt, regal King Cobra rostral snout
+                // Large symmetrical King Cobra Crown Scutes (parietal, occipital, frontal, and prefrontal shield plates on top of head)
+                const parietal = ell(0.32, 0.38, -0.32, 0.36, 0.16, 0.58);
+                const occipital = ell(0.38, 0.34, -1.05, 0.38, 0.14, 0.42);
+                const frontal = ell(0, 0.40, 0.58, 0.28, 0.15, 0.52);
+                const prefrontal = ell(0.22, 0.30, 1.55, 0.26, 0.13, 0.46);
+                const crownPlates = U(parietal, occipital, frontal, prefrontal);
+                // Fierce overhanging supraocular brow shield (gives the King Cobra its iconic commanding, hooded glare)
+                const supra = lock([0.34, 0.31, 1.48], [0.62, 0.44, 1.00], [0.78, 0.33, 0.28], 0.18, 0.13);
+                const nasal = ell(0.27, 0.09, 2.66, 0.13, 0.11, 0.19);
+                const nostril = ell(0.30, 0.10, 2.72, 0.052, 0.058, 0.095);
+                let up = SU(0.12, cranium, temple, hoodNeckBase, snout, muzzle, supra, crownPlates, nasal);
+                up = SUB(up, sph(SEYE[0], SEYE[1], SEYE[2], RS * 0.94), 0.025);
                 up = SUB(up, nostril, 0.02);
-                up = SUB(up, lorealPit, 0.025);
-                up = SUB(up, ell(0, -0.16, 3.02, 0.065, 0.14, 0.12), 0.03); // lingual fossa (notch at front of upper lip for the forked tongue)
-                up = SUB(up, (x, y, z) => Math.max(y - ymW(z), -(z + 0.85)), 0.035);
-                up = SUB(up, ell(0, -0.40, 0.95, 0.52, 0.25, 1.68), 0.04);
-                // Sleek, flat serpent mandible (no dragon chin bumps)
-                let jw = SU(0.12, sy(cone(0, -0.46, -0.75, 0, -0.52, 2.35, 0.68, 0.26), 0.48, -0.48), ell(0.68, -0.38, -0.40, 0.34, 0.24, 0.65), ell(0, -0.56, 2.25, 0.24, 0.14, 0.25));
+                up = SUB(up, ell(0, -0.15, 3.04, 0.072, 0.15, 0.13), 0.03); // rostral lingual notch for the darting forked tongue
+                up = SUB(up, (x, y, z) => Math.max(y - ymW(z), -(z + 0.88)), 0.035);
+                up = SUB(up, ell(0, -0.40, 0.95, 0.50, 0.25, 1.68), 0.04);
+                // Sleek, muscular King Cobra lower mandible with sublingual throat scutes
+                let jw = SU(0.12, sy(cone(0, -0.45, -0.85, 0, -0.51, 2.38, 0.66, 0.28), 0.50, -0.47), ell(0.62, -0.37, -0.42, 0.32, 0.24, 0.68), ell(0, -0.54, 2.28, 0.26, 0.15, 0.27));
                 jw = SUB(jw, (x, y, z) => -(y - (ymW(z) - 0.07)), 0.04);
-                jw = SUB(jw, ell(0, -0.42, 0.85, 0.40, 0.18, 1.45), 0.04);
-                return share.scSnake = { up: ab(up), jaw: ab(jw), brow: supra, ridge: snout, zyg: gland, crest: supra, nostril };
+                jw = SUB(jw, ell(0, -0.42, 0.85, 0.39, 0.18, 1.45), 0.04);
+                return share.scSnake = { up: ab(up), jaw: ab(jw), brow: supra, ridge: crownPlates, zyg: temple, crest: U(supra, crownPlates), nostril };
+            }
+            // Sculpted 3D Cranio-Cervical Cobra Hood Ribs & Lateral Wing Membrane (bridges the back of the skull into the flared neck hood)
+            function cobraHoodShared() {
+                if (share.cobraHood) return share.cobraHood;
+                const HS = HS0, NU = 28, NV = 22, P = [], UVs = [], T = [], I = [];
+                for (let side of [-1, 1]) {
+                    const b0 = P.length / 3;
+                    for (let j = 0; j <= NV; j++) {
+                        const v = j / NV; // 0 = behind temple (z = -0.35), 1 = deep down cervical hood (z = -4.2)
+                        const z = lerp(-0.35, -4.25, v);
+                        // Teardrop King Cobra hood flare curve: widens rapidly behind head, peaks mid-hood, tapers smoothly into neck
+                        const flare = Math.sin(Math.PI * Math.pow(v, 0.68)) * (1 - 0.18 * v);
+                        const wMax = (0.78 + 1.85 * flare);
+                        const yArch = 0.06 - 0.18 * v + 0.14 * flare;
+                        for (let i = 0; i <= NU; i++) {
+                            const u = i / NU; // 0 = dorsal midline, 0.5 = lateral rib rim, 1.0 = ventral throat edge
+                            const ang = u * Math.PI;
+                            // Flattened dorsoventral cobra hood cross-section with raised vertebral ridge and 8 subtle elongated cervical rib flutes
+                            const ribWave = 0.032 * flare * Math.sin(v * 26.0) * Math.sin(ang);
+                            const x = side * wMax * Math.sin(ang) * (0.92 + 0.08 * Math.sin(ang));
+                            const dorsalRidge = u < 0.22 ? 0.12 * Math.cos(u / 0.22 * Math.PI * 0.5) : 0;
+                            const ventralDish = u > 0.55 ? -0.06 * Math.sin((u - 0.55) / 0.45 * Math.PI) * flare : 0;
+                            const y = yArch + (0.28 * (1 - 0.35 * flare) * Math.cos(ang)) + dorsalRidge + ventralDish + ribWave;
+                            P.push(x * HS, y * HS, z * HS);
+                            UVs.push((u - 0.5) * 2.0 * FRILL_HW(v), v);
+                            T.push(v, u > 0.52 ? 1 : 0); // T[1]=1 marks ventral golden-banded throat side
+                        }
+                    }
+                    for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+                        const a = b0 + j * (NU + 1) + i, b = a + (NU + 1);
+                        if (side > 0) I.push(a, b, a + 1, a + 1, b, b + 1);
+                        else I.push(a, a + 1, b, a + 1, b + 1, b);
+                    }
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+                g.setAttribute('uv', new THREE.Float32BufferAttribute(UVs, 2));
+                g.setIndex(I); g.computeVertexNormals();
+                return share.cobraHood = { g, tone: new Float32Array(T) };
             }
             function mouthSnakeShared() {
                 if (share.mouthSnake) return share.mouthSnake;
@@ -5391,10 +5493,12 @@ varying vec2 vQ;
                 const tgG = new THREE.BufferGeometry(), tgPos = BA(tgP, 3), tgNor = BA(tgN, 3); tgPos.setUsage(THREE.DynamicDrawUsage); tgNor.setUsage(THREE.DynamicDrawUsage); tgG.setAttribute('position', tgPos); tgG.setAttribute('normal', tgNor); tgG.setAttribute('color', BA(tgC, 3)); tgG.setIndex(tgI);
                 const tongue = mk(tgG, skinMat); tongue.castShadow = false; tongue.position.copy(jm.position); jawG.add(tongue);
                 function tongueUpdate(lift, wag, t) {
-                    const snk = !!pal.isSnake, flick = snk ? (0.55 + 0.45 * Math.sin(t * 14.0 + pal.seed)) : 0;
-                    let py = -0.545, pz = snk ? 0.15 + 0.55 * flick : -0.15; const ds = (snk ? 2.65 : 2.0) / TN;
+                    // Authentic King Cobra chemosensory tongue-flicking: rhythmic rapid oscillatory bursts tasting the air
+                    const snk = !!pal.isSnake, cyc = (t * 1.45 + (pal.seed % 17) * 0.13) % 1.0;
+                    const burst = snk ? (cyc < 0.68 ? Math.sin(cyc / 0.68 * Math.PI) * (0.78 + 0.22 * Math.sin(t * 28.0)) : 0.18) : 0;
+                    let py = -0.535, pz = snk ? 0.10 + 0.85 * burst : -0.15; const ds = (snk ? 2.95 * (0.45 + 0.55 * burst) : 2.0) / TN;
                     for (let i = 0; i <= TN; i++) {
-                        const f = i / TN, th = 0.02 + lift * (0.95 * f * f + 0.22 * f) + (wag + (snk ? 0.65 : 0)) * (snk ? 0.32 : 0.20) * f * Math.sin(f * (snk ? 7.5 : 5.0) - t * (snk ? 19.0 : 11.0)), ct = Math.cos(th), sn = Math.sin(th);
+                        const f = i / TN, th = 0.02 + lift * (0.85 * f * f + 0.20 * f) + (wag + (snk ? 0.85 * burst : 0)) * (snk ? 0.42 : 0.20) * f * Math.sin(f * (snk ? 8.5 : 5.0) - t * (snk ? 26.0 : 11.0)), ct = Math.cos(th), sn = Math.sin(th);
                         if (i > 0) { py += sn * ds; pz += ct * ds; }
                         const fk = snk ? sm(0.62, 0.98, f) : 0;
                         const w = (snk ? 0.16 + 0.22 * fk : 0.25) * Math.pow(Math.min(1, (1 - f) * (snk ? 3.8 : 3.0)), 0.75) * (0.70 + 0.30 * sm(0, 0.25, f)) + 0.004, hh = (snk ? 0.055 : 0.085) * Math.pow(Math.min(1, (1 - f) * 3.5), 0.7) + 0.004;
@@ -5430,6 +5534,36 @@ varying vec2 vQ;
                 for (const sgn of [1, -1]) {
                     const src = sgn > 0 ? fr.g : fr.gm, g = new THREE.BufferGeometry(); for (const k of Object.keys(src.attributes)) g.setAttribute(k, src.attributes[k]); g.setAttribute('color', BA(frCol, 3)); g.setIndex(src.index);
                     const pv = new THREE.Group(), me = mk(g, finMat); me.receiveShadow = false; pv.position.set(sgn * 1.04 * HS, -0.16 * HS, -0.12 * HS); if (!pal.isSnake) pv.add(me); group.add(pv); frills.push(pv);
+                }
+                // For King Cobras (pal.isCobra): attach the sculpted 3D cranio-cervical hood wing mesh that flares with the cobra's threat display
+                let cobraHoodMesh = null;
+                if (pal.isCobra) {
+                    const ch = cobraHoodShared(), chG = ch.g.clone(), nV = ch.tone.length / 2, chCol = new Float32Array(nV * 3), cc = [0, 0, 0];
+                    const tgGold = pal.throatGold || [0.85, 0.64, 0.25];
+                    for (let i = 0; i < nV; i++) {
+                        const v = ch.tone[i * 2], isVentral = ch.tone[i * 2 + 1];
+                        if (isVentral > 0.5) {
+                            // Ventral hood throat: golden-amber crossed by bold jet-black King Cobra transverse throat bands
+                            const band = Math.sin(v * Math.PI * 5.2) > 0.25 ? 0.08 : 1.0;
+                            cc[0] = tgGold[0] * band; cc[1] = tgGold[1] * band; cc[2] = tgGold[2] * band;
+                        } else {
+                            // Dorsal hood: obsidian-olive with golden-ivory King Cobra chevron spectacle marking
+                            const chev = Math.exp(-Math.pow((v - 0.38) / 0.11, 2)) * 0.85;
+                            mixc(pal.body, pal.crest, chev, cc);
+                        }
+                        chCol[i * 3] = cc[0]; chCol[i * 3 + 1] = cc[1]; chCol[i * 3 + 2] = cc[2];
+                    }
+                    chG.setAttribute('color', BA(chCol, 3));
+                    // Construct dedicated attribute buffers so headMat renders real scales across the cranio-cervical hood
+                    const posArr = chG.attributes.position.array, aT = new Float32Array(nV * 3), aQ = new Float32Array(nV * 2), aK = new Float32Array(nV), aMk = new Float32Array(nV * 4), aM = new Float32Array(nV * 3);
+                    for (let i = 0; i < nV; i++) {
+                        aT[i * 3 + 2] = -1;
+                        aQ[i * 2] = posArr[i * 3] / HS; aQ[i * 2 + 1] = posArr[i * 3 + 1] / HS;
+                        aK[i] = ch.tone[i * 2 + 1];
+                    }
+                    chG.setAttribute('aT', BA(aT, 3)); chG.setAttribute('aQ', BA(aQ, 2)); chG.setAttribute('aK', BA(aK, 1)); chG.setAttribute('aMk', BA(aMk, 4)); chG.setAttribute('aM', BA(aM, 3));
+                    cobraHoodMesh = mk(chG, headMat);
+                    group.add(cobraHoodMesh);
                 }
                 // head mane (rigid to the skull, moves in the shader): every tuft curls toward the neck and back, so it sweeps like flame instead of bristling
                 const r = rng(pal.seed), hl = [], jl = [], d = new THREE.Object3D(), dir = new THREE.Vector3(), ML = pal.maneLen;
@@ -5540,7 +5674,13 @@ varying vec2 vQ;
                     U.expr.value.set(clamp(0.95 * st.charge + 0.45 * st.roar + 0.05 * Math.sin(t * 1.3)), clamp(st.charge + 0.35 * st.roar), clamp(0.22 + 0.22 * Math.sin(t * 1.9 + BO) + 0.8 * st.charge + 0.6 * st.roar), 0);
                     const shut = Math.max(blink, clamp(st.lid || 0));                                                        // st.lid (optional, 0..1): the motion side holds the eyes shut (asleep on the spire)
                     for (let i = 0; i < lids.length; i += 2) { lids[i].rotation.set(lerp(rad(-36), rad(52), clamp(0.14 + 0.24 * snarl + shut)), 0, (i ? 1 : -1) * (0.30 + 0.12 * snarl) * (1 - shut)); lids[i + 1].rotation.x = -0.02 - 0.26 * snarl - 0.08 * shut; }
-                    U.eye.value = Math.max(st.glow, st.charge); U.slit.value = clamp(0.25 + 0.75 * Math.max(st.charge, st.roar));
+                    // King Cobras (elapids) have fierce round pupils with glowing golden-bronze irises; dragons have vertical slits
+                    U.eye.value = pal.isCobra ? Math.max(0.55, st.charge, st.roar) : Math.max(st.glow, st.charge);
+                    U.slit.value = pal.isCobra ? 0.06 : clamp(0.25 + 0.75 * Math.max(st.charge, st.roar));
+                    if (cobraHoodMesh) {
+                        const hoodFlare = 0.82 + 0.36 * Math.max(st.roar, st.charge, st.hood || 0.7) + 0.05 * Math.sin(t * 4.2 + pal.seed);
+                        cobraHoodMesh.scale.set(hoodFlare, 0.92 + 0.08 * hoodFlare, 1.0);
+                    }
                     const fire = Math.max(st.roar, st.breath), F = pal.fire, C = pal.fireCharge;
                     throat.material.color.setRGB(F[0] * fire + C[0] * st.charge, F[1] * fire + C[1] * st.charge, F[2] * fire + C[2] * st.charge);
                     skinMat.emissive.setRGB(pal.flesh[0] * 0.03 * st.glow + pal.self[0] * 0.7, pal.flesh[1] * 0.03 * st.glow + pal.self[1] * 0.7, pal.flesh[2] * 0.03 * st.glow + pal.self[2] * 0.7);
@@ -5597,12 +5737,50 @@ varying vec2 vQ;
                 }
                 // ----- body tube colour: a = metres behind the head, phi = ring angle (sin > 0 is the back); returns the belly flag aK -----
                 function bodyColor(a, phi, LEN, out) {
-                    const s = Math.sin(phi), belly = sm(-0.45, -0.80, s), dors = sm(0.72, 0.98, s);
+                    const s = Math.sin(phi), c = Math.cos(phi), ac = Math.abs(c), belly = sm(-0.35, -0.78, s), dors = sm(0.68, 0.98, s);
                     if (pal.isSnake) {
-                        const band = 0.5 + 0.5 * Math.sin(a * 0.85 + Math.cos(phi * 2.0) * 1.4), dm = Math.pow(band, 2.2) * (1 - belly);
-                        mixc(pal.body, pal.deep, dors * 0.85 + 0.45 * (1 - band) * (1 - belly), out);
-                        mix3(out, pal.crest, 0.55 * dm * sm(-0.1, 0.85, s));
-                        mix3(out, pal.flank, 0.45 * sm(0.15, -0.40, s) * (1 - belly)); mix3(out, pal.belly, belly);
+                        // Authentic King Cobra (Ophiophagus hannah / Raj Gokhra) pattern:
+                        // 1. Hood Zone (a = 0.5..24m):
+                        //    - Ventral throat: bright golden-ochre/cream-yellow crossed by 3 bold jet-black transverse throat bands & twin dark sub-hood ocelli!
+                        //    - Dorsal hood: obsidian-olive with the iconic pale golden-cream V-chevron / spectacle hood mark & dark ocellus border!
+                        // 2. Body & Tail (a > 20m):
+                        //    - Glossy obsidian-charcoal/olive-black scales with forward-pointing pale golden-amber chevron crossbands (^ bands)
+                        //      that narrow on the vertebral line and widen down the flanks, darkening toward the keeled jet-black tail!
+                        const inHood = sm(0.4, 2.8, a) * (1 - sm(18.0, 26.5, a));
+                        const chevronWave = Math.sin(a * 0.52 - (1 - s) * 1.45); // forward-pointing ^ chevron along the back
+                        const chevron = Math.pow(clamp(0.5 + 0.5 * chevronWave, 0, 1), 4.5) * (1 - 0.65 * sm(LEN * 0.78, LEN, a));
+                        mixc(pal.body, pal.deep, dors * 0.75 + 0.40 * (1 - chevron) * (1 - belly), out);
+                        mix3(out, pal.flank, 0.55 * sm(0.25, -0.35, s) * (1 - belly));
+                        // Golden-ochre King Cobra chevron crossbands on back and flanks
+                        mix3(out, pal.crest, (0.68 * chevron * sm(-0.25, 0.75, s)) * (1 - 0.5 * inHood));
+                        if (inHood > 0.01 && s > 0) {
+                            // Dorsal Hood V-Chevron / Spectacle Mark (a around 6m..13m)
+                            const vCurve = a - 7.5 - 3.8 * ac * ac;
+                            const specGold = Math.exp(-(vCurve * vCurve) / 2.2) * sm(0.15, 0.88, ac);
+                            const specBlack = Math.exp(-((vCurve - 1.6) * (vCurve - 1.6)) / 1.8) * sm(0.10, 0.85, ac);
+                            mix3(out, pal.deep, inHood * specBlack * 0.92);
+                            mix3(out, pal.throatGold || pal.crest, inHood * specGold * 0.88);
+                        }
+                        if (belly > 0.01) {
+                            const tg = pal.throatGold || pal.belly;
+                            // Ventral belly scutes: warm cream-ochre mottled with slate-black edges; on the hood throat, bold black transverse collar bands
+                            const bCol = [pal.belly[0], pal.belly[1], pal.belly[2]];
+                            if (inHood > 0.01) {
+                                const throatShape = a + 1.8 * ac * ac;
+                                // Three classic black King Cobra throat bands at a ~ 4.5m, 9.5m, and 15.0m + twin dark ocelli at a ~ 6.8m
+                                const blkBand = Math.max(
+                                    Math.exp(-Math.pow((throatShape - 4.6) / 1.1, 2)),
+                                    Math.exp(-Math.pow((throatShape - 10.2) / 1.4, 2)),
+                                    Math.exp(-Math.pow((throatShape - 15.8) / 1.5, 2)),
+                                    Math.exp(-Math.pow((a - 7.0) / 1.3, 2)) * Math.exp(-Math.pow((ac - 0.48) / 0.18, 2))
+                                );
+                                mixc(tg, pal.deep, clamp(blkBand * 0.94, 0, 1), bCol);
+                            } else {
+                                const scuteBand = 0.18 * (0.5 + 0.5 * Math.sin(a * 0.52));
+                                mix3(bCol, pal.deep, scuteBand);
+                            }
+                            mix3(out, bCol, belly);
+                        }
                         return belly;
                     }
                     mixc(pal.body, pal.deep, dors * 0.8 + 0.25 * (0.5 + 0.5 * Math.sin(a * 0.31)) * (1 - belly), out);
@@ -5766,7 +5944,7 @@ varying vec2 vQ;
                 const LEN = cfg.LEN, RMAX = cfg.RMAX, NS = cfg.NS || 300, kA = 172 / LEN, K = RMAX / 3.6, PH = cfg.phase || 0;      // kA: body arclength -> profile; K: size relative to red
                 const st = {
                     head: new THREE.Vector3(), fwd: new THREE.Vector3(0, 0, 1), up: new THREE.Vector3(0, 1, 0), mouth: new THREE.Vector3(), neck: new THREE.Vector3(),
-                    roar: 0, charge: 0, jaw: 0, breath: 0, glow: 0, speed: 0, s: 0, vis: 1, aim: 0, lid: 0, reach: 0
+                    roar: 0, charge: 0, jaw: 0, breath: 0, glow: 0, speed: 0, s: 0, vis: 1, aim: 0, lid: 0, reach: 0, hood: 0.85
                 };     // lid: 0..1 eyes shut (asleep); reach: 0..1 claws thrown forward     // aim: 0..1, the head tipped back so the open mouth (not the brow) faces the gaze target
                 const rProf = a => rProf0(a * kA);
                 let pts = null, railN = null, railK = null, railW = null, railQ = null, railS = null, railT = null, railU = null, sPhase = 0, ds = 0, sTot = 0, sOfK = null, look = null, HS = 2.75 * K, headG, body, bodyGeo, mane, shown = true;
@@ -5889,21 +6067,36 @@ varying vec2 vQ;
                     cfg.pose(t, st);                                                               // beat pulses: roar, charge, breath, jaw, glow, vis
                     const sh = sOfK(t), spd = (sOfK(t + 0.03) - sOfK(t - 0.03)) / 0.06, v2g = Math.min(spd * spd, 3600) / 9.8; st.s = sh; st.speed = spd;
                     live.length = 0; for (let k = 0; k < imps.length; k++) { const m = imps[k]; if (t > m.t0 && t < m.tEnd) live.push(m); }
-                    const calm = cfg.calm ? cfg.calm(t) : 1, wLen = cfg.noLegs ? 25 : WAVE, wAmp = lerp(1.25, 0.85, sm(14, 60, spd)) * calm * (cfg.noLegs ? 1.55 : 1.0), wK = TAU / wLen, wPh = -(1 + SLIP) * (sh + sPhase) * wK - (cfg.noLegs ? 8.5 : IDLE) * t * wK + PH;
+                    const isCobra = !!cfg.isCobra;
+                    const calm = cfg.calm ? cfg.calm(t) : 1, wLen = isCobra ? 21 : (cfg.noLegs ? 25 : WAVE), wAmp = lerp(1.25, 0.85, sm(14, 60, spd)) * calm * (isCobra ? 1.85 : cfg.noLegs ? 1.55 : 1.0), wK = TAU / wLen, wPh = -(1 + SLIP) * (sh + sPhase) * wK - (isCobra ? 9.5 : cfg.noLegs ? 8.5 : IDLE) * t * wK + PH;
                     const tailOn = cfg.tailOn ? cfg.tailOn(t) : 0;
                     const stir = cfg.stir ? cfg.stir(t) : 0, sK = TAU / 23, sPh = -15 * t * sK + PH * 1.7;                // tense: a shorter wave runs down the body
+                    // King Cobra signature behavior: upright S-neck arch (standing anterior 1/3 of body) + hypnotic lateral hood-weaving sway (ফণা তুলে দুলতে থাকা)
+                    const cobraStance = isCobra ? calm * (0.45 + 0.55 * Math.max(st.hood || 0.8, st.roar, st.charge)) * (1 - sm(38, 65, spd)) : 0;
                     // spine centres: rail, bank into the turn, travelling wave (none at the head), impulses
                     for (let i = 0; i <= NS; i++) {
                         const a = aOf(i), s = sh - a; pathAt(s, v0); pathAt(s + 0.6, v1); pathAt(s - 0.6, v2); vT.subVectors(v2, v1).normalize();    // tail-ward tangent
                         // the swim wave runs on world-level axes, not on the roll frame: side to side (level, square to the spine) and a smaller
                         // heave square to both. It fades out where the spine is near vertical, where "side" has no meaning.
                         let wS = 0, qz = 0, sj = 0, su = 0; if (railW) { const f = clamp(s, 0, sTot - 0.001) / ds; sj = Math.floor(f); su = f - sj; wS = lerp(railW[sj], railW[sj + 1], su); qz = lerp(railQ[sj], railQ[sj + 1], su); }
-                        const hl = Math.hypot(vT.x, vT.z), lv = sm(0.24, 0.52, hl) * (1 - qz), env = sm(7, 34, a) * (0.85 + 0.9 * sm(60, LEN, a)) * lv, ph = a * wK + wPh;
+                        const hl = Math.hypot(vT.x, vT.z), lv = sm(0.24, 0.52, hl) * (1 - qz), env = sm(isCobra ? 14 : 7, 34, a) * (0.85 + 0.9 * sm(60, LEN, a)) * lv, ph = a * wK + wPh;
                         if (lv > 0) {
                             const sx = vT.z / hl, sz = -vT.x / hl, hx = -vT.y * vT.x / hl, hz = -vT.y * vT.z / hl;           // side = (sx, 0, sz); heave = (hx, hl, hz)
-                            let ws = env * wAmp * Math.sin(ph), wh = env * (cfg.noLegs ? 0.14 : 0.55) * calm * Math.sin(ph * 0.63 + 1.3);
-                            if (stir > 0.01) { const e2 = stir * lv * sm(5, 22, a) * (1 - 0.5 * sm(LEN * 0.5, LEN, a)); ws += e2 * 0.95 * Math.sin(a * sK + sPh); wh += e2 * 0.5 * Math.cos(a * sK * 0.8 + sPh * 0.9); }
+                            let ws = env * wAmp * Math.sin(ph), wh = env * (isCobra ? 0.04 : cfg.noLegs ? 0.14 : 0.55) * calm * Math.sin(ph * 0.63 + 1.3);
+                            if (stir > 0.01) { const e2 = stir * lv * sm(5, 22, a) * (1 - 0.5 * sm(LEN * 0.5, LEN, a)); ws += e2 * 0.95 * Math.sin(a * sK + sPh); wh += e2 * (isCobra ? 0.12 : 0.5) * Math.cos(a * sK * 0.8 + sPh * 0.9); }
                             v0.x += sx * ws + hx * wh; v0.y += hl * wh; v0.z += sz * ws + hz * wh;
+                        }
+                        if (cobraStance > 0.01 && a < 36) {
+                            // King Cobra upright S-neck arch + hypnotic lateral cobra weave on the raised anterior neck (a = 0..36m)
+                            const uN = a / 36, archEnv = Math.sin(Math.PI * Math.pow(uN, 0.72)) * (1 - 0.3 * uN);
+                            const swayEnv = (1 - sm(10, 34, a));
+                            const sx = hl > 0.1 ? vT.z / hl : 0, sz = hl > 0.1 ? -vT.x / hl : 1;
+                            const weave = (1.65 + 0.75 * st.roar) * K * Math.sin(t * 2.85 + PH - a * 0.08) * swayEnv * cobraStance;
+                            const sCurveBack = 2.8 * K * Math.sin(uN * Math.PI * 1.35) * cobraStance;
+                            const rearLift = (3.8 + 2.2 * Math.max(st.roar, st.charge)) * K * archEnv * cobraStance;
+                            v0.x += sx * weave + vT.x * sCurveBack;
+                            v0.y += rearLift;
+                            v0.z += sz * weave + vT.z * sCurveBack;
                         }
                         if (wS > 0.001) seatOff(a, sj, su, wS, t, v0);
                         if (tailOn > 0 && a > LEN - 34) cfg.tail(t, a, tailOn, v0);
@@ -6015,15 +6208,36 @@ varying vec2 vQ;
                     const P = bodyGeo.attributes.position.array, Nr = bodyGeo.attributes.normal.array, AT = bodyGeo.attributes.aT.array; let o = 0;
                     const breath = 1 + 0.018 * Math.sin(t * 1.3 + PH) + 0.05 * st.charge;
                     const gated = st.s - LEN < inst.sIn + GT || st.s + 12 > inst.sOut - GT;          // part of the body is still (or already) inside the rift
-                    const swl = cfg.swell && cfg.swellOn(t) > 0;
+                    const swl = cfg.swell && cfg.swellOn(t) > 0, isCobra = !!cfg.isCobra;
+                    const hoodOpen = isCobra ? clamp((st.hood ?? 0.85) + 0.25 * Math.max(st.roar, st.charge) + 0.06 * Math.sin(t * 4.5 + PH), 0.45, 1.15) : 0;
                     for (let i = 0; i <= NS; i++) {
                         const a = aOf(i), an = a * kA, r = RMAX * rProf(a) * (an > 8 && an < 60 ? breath : 1) * (swl ? cfg.swell(t, a) : 1) * (gated ? gateOf(a) : 1), k = i * 3;
                         const bx = Bb[k], by = Bb[k + 1], bz = Bb[k + 2], ux = Nn[k], uy = Nn[k + 1], uz = Nn[k + 2], tx = Tt[k], ty = Tt[k + 1], tz = Tt[k + 2];
+                        // For King Cobras (isCobra): anatomically accurate expandable cervical hood (ফণা) from a = 0.2m to 27m behind the skull!
+                        // Elongated cervical ribs spread laterally up to 3.2x neck width while dorsoventrally flattening into a sleek dish with a central dorsal vertebral ridge.
+                        let hLat = 1.0, hVert = 1.0, hEnv = 0;
+                        if (isCobra && a < 28.0) {
+                            const uH = clamp((a - 0.2) / 26.5, 0, 1);
+                            // Teardrop King Cobra hood silhouette: widest at a ~ 6.5m..13.5m behind head, tapering smoothly into the muscular neck
+                            hEnv = Math.sin(Math.PI * Math.pow(uH, 0.58)) * (1 - 0.22 * uH) * sm(0.1, 2.2, a) * (1 - sm(21.0, 27.5, a));
+                            const ribFlute = 1 + 0.045 * hEnv * Math.sin(a * 2.8);
+                            hLat = (1 + 2.25 * hoodOpen * hEnv) * ribFlute;
+                            hVert = 1 - 0.62 * Math.min(1, hoodOpen) * hEnv;
+                        }
                         for (let j = 0; j <= NR; j++) {
-                            const c = RC[j], s = RS[j], wy = RW[j];                                       // ring profile: slightly flat belly, a ridge along the back
-                            const nx = c * bx + s * ux * wy, ny = c * by + s * uy * wy, nz = c * bz + s * uz * wy;
+                            const c = RC[j], s = RS[j];
+                            let wx = hLat, wy = RW[j] * hVert, yOff = 0;
+                            if (hEnv > 0.001) {
+                                // Central vertebral ridge along the dorsal back (s > 0) and concave ventral throat dish (s < 0)
+                                const spineRidge = s > 0 ? 0.34 * hEnv * Math.exp(-c * c * 7.5) * s : 0;
+                                const throatDish = s < 0 ? 0.18 * hEnv * (1 - c * c) * (-s) : 0;
+                                wy += spineRidge;
+                                yOff = throatDish; // curves the ventral throat slightly inward like a real flared cobra hood
+                            }
+                            const cx = c * wx, sy = s * wy + yOff;
+                            const nx = cx * bx + sy * ux, ny = cx * by + sy * uy, nz = cx * bz + sy * uz;
                             P[o] = C[k] + nx * r; P[o + 1] = C[k + 1] + ny * r; P[o + 2] = C[k + 2] + nz * r;
-                            const mx = c * bx + s * ux / wy, my = c * by + s * uy / wy, mz = c * bz + s * uz / wy, l = 1 / Math.sqrt(mx * mx + my * my + mz * mz);
+                            const mx = (c / wx) * bx + (s / Math.max(0.22, wy)) * ux, my = (c / wx) * by + (s / Math.max(0.22, wy)) * uy, mz = (c / wx) * bz + (s / Math.max(0.22, wy)) * uz, l = 1 / Math.sqrt(mx * mx + my * my + mz * mz);
                             Nr[o] = mx * l; Nr[o + 1] = my * l; Nr[o + 2] = mz * l;
                             AT[o] = tx; AT[o + 1] = ty; AT[o + 2] = tz; o += 3;
                         }
@@ -6216,8 +6430,8 @@ varying vec2 vQ;
             const KNOT0 = 50.75;                                 // the two heads pass each other at the top of the knot here; a quarter turn later, on CLASH2, red comes down on white's neck from above, its face to the lens
 
             const red = make({ name: 'red', pal: 'red', LEN: 172, RMAX: 3.6, seed: 808, seatD: 2.72, seatK: 0.767, grip: 1.15, upZone: new THREE.Vector3(0, 0.6, -1).normalize(), sRef: [23.75, 646.141494488118], swell: (t, a) => Choreo.swell(t, a), swellOn: t => Choreo.swellOn(t), lift: t => Choreo.lift(t), liftUp: t => Choreo.liftUp(t), tailOn: t => Choreo.tailOn(t), tail: (t, a, w, out) => Choreo.tail(t, a, w, out), rail: a => Choreo.red(a), acts: (imp, d) => Choreo.redActs(imp, d), stir: t => Choreo.stir(t, 0), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.redPose(t, st), gaze: (t, st, out) => Choreo.redGaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
-            const snake2 = make({ name: 'snake2', pal: 'snake2', heads: 2, noLegs: true, LEN: 145, RMAX: 3.0, NS: 240, seed: 3141, phase: 1.4, rail: a => Choreo.snake2(a), acts: (imp, d) => Choreo.snake2Acts(imp, d), stir: t => Choreo.stir(t, 1), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.snake2Pose(t, st), gaze: (t, st, out) => Choreo.snake2Gaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
-            const snake3 = make({ name: 'snake3', pal: 'snake3', heads: 3, noLegs: true, LEN: 155, RMAX: 3.25, NS: 256, seed: 2718, phase: 3.8, rail: a => Choreo.snake3(a), acts: (imp, d) => Choreo.snake3Acts(imp, d), stir: t => Choreo.stir(t, 1), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.snake3Pose(t, st), gaze: (t, st, out) => Choreo.snake3Gaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
+            const snake2 = make({ name: 'snake2', pal: 'snake2', heads: 1, isCobra: true, noLegs: true, LEN: 148, RMAX: 3.15, NS: 260, seed: 3141, phase: 1.4, rail: a => Choreo.snake2(a), acts: (imp, d) => Choreo.snake2Acts(imp, d), stir: t => Choreo.stir(t, 1), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.snake2Pose(t, st), gaze: (t, st, out) => Choreo.snake2Gaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
+            const snake3 = make({ name: 'snake3', pal: 'snake3', heads: 1, isCobra: true, noLegs: true, LEN: 162, RMAX: 3.45, NS: 280, seed: 2718, phase: 3.8, rail: a => Choreo.snake3(a), acts: (imp, d) => Choreo.snake3Acts(imp, d), stir: t => Choreo.stir(t, 1), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.snake3Pose(t, st), gaze: (t, st, out) => Choreo.snake3Gaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
             const white = make({ name: 'white', pal: 'white', LEN: 150, RMAX: 3.1, NS: 264, seed: 4242, phase: 2.1, rail: a => Choreo.white(a), acts: (imp, d) => Choreo.whiteActs(imp, d), stir: t => Choreo.stir(t, 1), calm: t => Choreo.calm(t), pose: (t, st) => Choreo.whitePose(t, st), gaze: (t, st, out) => Choreo.whiteGaze(t, st, out), lensRoll: t => Choreo.lensRoll(t) });
 
             const Choreo = {
@@ -6362,36 +6576,36 @@ varying vec2 vQ;
                     return gzEnd(out);
                 },
 
-                // ================= the 3-headed King Viper (snake3) & 2-headed Green Anaconda/Viper (snake2) =================
-                // Both snakes emerge from the LAKE WATER and the LEFT & RIGHT rocky banks at 27 s (never from the sky!).
-                // They fight strictly like real giant snakes—lunging with curved venom fangs, biting, and coiling/constricting
-                // around the struggling Crimson Dragon (zero fire or energy breath from the snakes).
+                // ================= Royal Emperor King Cobra (snake3 · রাজগোখরা) & Banded King Cobra (snake2 · শঙ্খচূড়) =================
+                // Both giant King Cobras (Ophiophagus hannah) emerge from the LAKE WATER and the LEFT & RIGHT rocky ghats at 27 s.
+                // They exhibit authentic King Cobra behavior: rearing the anterior 1/3 of their body vertically upright like a standing pillar,
+                // expanding their wide cervical hoods (ফণা) with golden-black throat bands, weaving hypnotically side-to-side, cocking back
+                // in an S-coil, and launching downward-forward whip-strikes (ছোবল) with fixed proteroglyphous venom fangs!
                 snake3({ add, key, at, P, helix }) {
                     const F = Film.T, A = Film.A, C1 = A.clash1;
-                    // Hidden beneath the eastern lake water & right rocky bank before 27.0s, then bursts out of the water and right side!
+                    // Hidden beneath the eastern lake water & right rocky bank before 27.0s, then bursts out of the water and rears its hood!
                     at(0, 56, -14, 46); at(26.4, 44, -10, 42);
                     at(27.5, 34, 0.05, 38);                             // bursts up through the right lake surface!
-                    P(25, 1.8, 36, 28.6); P(14, 0.9, 41, 29.8);         // skims across the water throwing spray & wake
-                    P(4, 2.2, 46, 30.8); P(-6, 3.5, 49, 31.6);          // surges across the pool in front of the lens
-                    P(8, 9.5, 44, 32.5); P(24, 18.5, 36, 33.4);         // slithers up the right rocky bank and terrace ledges
-                    P(36, 28.0, 26, 34.3); P(40, 39.0, 18, 35.1); P(35, 48.0, 13, 35.8);
-                    // FACEOFF (36.0s): rears its 3 viper heads on the right side, hissing and flickering forked tongues at Red
-                    P(31.5, 53.0, 11.5, 37.5); P(24.0, 52.5, 12.0, 38.6);
-                    // WROAR (39.0s-41.2s): lunges straight across to BITE Red's neck/flank with all 3 fang-filled jaws!
-                    P(-9.5, 51.8, 12.8, 39.35); P(-11.0, 50.8, 13.4, 40.15);
-                    P(18.5, 52.0, 13.5, 41.15);                         // recoils back to striking distance for CLASH1
-                    // CLASH1 (42.0s): violent mid-air fang bite collision at Film.A.clash1, then slithers around the eastern spire ledges
-                    P(C1.x + 15.4, C1.y + 0.8, C1.z - 0.3, F.CLASH1); P(C1.x + 11.3, C1.y + 3, C1.z); P(C1.x + 9.3, C1.y + 9.4, C1.z - 1.5, 42.75); P(C1.x + 11.3, C1.y + 15.9, C1.z - 4.5);
+                    P(25, 2.2, 36, 28.6); P(14, 1.2, 41, 29.8);         // glides across the water with wide horizontal S-waves throwing spray
+                    P(4, 3.8, 46, 30.8); P(-6, 5.2, 49, 31.6);          // surges across the pool in front of the lens, hood flaring
+                    P(8, 11.5, 44, 32.5); P(24, 21.0, 36, 33.4);        // slithers up the right rocky bank and terrace ledges
+                    P(36, 31.0, 26, 34.3); P(39, 43.0, 18, 35.1); P(34, 53.5, 13, 35.8);
+                    // FACEOFF (36.0s): stands tall in a towering vertical King Cobra rear-up on the right terrace, hood flared wide & swaying!
+                    P(30.5, 57.5, 11.5, 37.5); P(23.5, 56.8, 12.0, 38.6);
+                    // WROAR (39.0s-41.2s): cocks its hooded S-neck high, then whip-strikes downward & forward (ছোবল) to bite Red's neck!
+                    P(-9.5, 52.2, 12.8, 39.35); P(-11.0, 51.0, 13.4, 40.15);
+                    P(18.5, 55.5, 13.5, 41.15);                         // rears back into upright hooded striking coil for CLASH1
+                    // CLASH1 (42.0s): violent mid-air cobra fang strike at Film.A.clash1, then slithers around the eastern mountain ledges
+                    P(C1.x + 15.4, C1.y + 1.2, C1.z - 0.3, F.CLASH1); P(C1.x + 11.3, C1.y + 3.5, C1.z); P(C1.x + 9.3, C1.y + 9.8, C1.z - 1.5, 42.75); P(C1.x + 11.3, C1.y + 16.2, C1.z - 4.5);
                     P(22.5, 66.5, 2.5, 43.3); P(26, 70.5, -11); P(27, 75.5, -30, 43.95); P(30, 80.0, -49); P(31, 84.5, -66, 44.55); P(25, 86.5, -81); P(10, 88.0, -88, 45.15); P(-9, 86.0, -83); P(-19, 82.0, -68, 45.75); P(-21, 78.0, -52);
-                    // FIRE2 (46.5s) & BOLT (49.5s): slithers low under Red's desperate fire plume, then whips forward in a vicious fang lunge at Red!
+                    // FIRE2 (46.5s) & BOLT (49.5s): slithers low under Red's fire plume, rears up high on the terrace, and snaps downward at Red!
                     P(-21.5, 74.0, -38, 46.4); P(-19, 66.5, -24, 46.9); P(-10, 56.5, -9, 47.4); P(2.5, 46.0, 6.5); P(9.5, 38.0, 20); P(11.5, 35.0, 26.5, 48.3);
-                    P(15, 38.0, 31.0); P(8.0, 48.0, 26.0, 49.0);
-                    P(-7.5, 61.5, 17.5, F.BOLT);                        // whip-strike fang lunge right at Red's head at BOLT (forcing Red to duck)!
-                    P(16.0, 66.5, 12.0, 50.12); P(14.5, 70.6, 4.6);
-                    // CLASH2 (51.0s-57.0s): locks its 3 jaws onto Red's neck and wraps tightly around Red in a constricting knot, dragging Red into the lake!
+                    P(15, 41.0, 31.0); P(8.5, 54.0, 25.5, 49.0);        // rears high above Red before the downward cobra strike
+                    P(-7.5, 61.8, 17.5, F.BOLT);                        // downward-forward King Cobra whip-strike right at Red's head at BOLT!
+                    P(16.0, 67.5, 12.0, 50.12); P(14.5, 71.2, 4.6);
+                    // CLASH2 (51.0s-57.0s): locks its proteroglyphous fangs onto Red's neck and wraps in a tight King Cobra constriction coil!
                     Choreo.knot(P, 1);
-                    // SPLASH (57.0s) & BEAM (63.0s-67.5s): bursts out of the right lake pool and coils on the right to confront the two Dragons,
-                    // snapping its fangs before being blasted into the ravine by the combined Dragon fire + frost-lightning beams!
+                    // SPLASH (57.0s) & BEAM (63.0s-67.5s): bursts out of the right lake pool, winds a basal support coil, and rears its giant hood!
                     const X = A.exitW, HW = Choreo.HOV[1];
                     P(X.x - 1.6, -7.5, X.z - 2.6, 57.45); P(X.x, 0.05, X.z); P(X.x - 0.2, 10, X.z - 0.3, 57.82); P(2.2, 21, 48.6); P(5.5, 30, 43); P(11.5, 36, 31); P(19, 38, 15.5, 58.74); P(26.5, 45.5, 6); P(31, 52, -6, 59.3); P(32, 54.5, -17); P(32, 56, -27, 59.68);
                     helix(59.68, 61.8, 42.5, -27, 180, 810, 10.5, 10.5, 56, 73.8, 45, 0.85, 2);
@@ -6402,22 +6616,24 @@ varying vec2 vQ;
                 snake3Acts(imp, d) {
                     const F = Film.T;
                     red.railAt(F.WROAR, tA); d.railAt(F.WROAR, tB); tC.subVectors(tA, tB).normalize();
-                    // WROAR: rapidviper fang-strike lunges into Red's neck and flank!
-                    imp(F.WROAR - 0.35, F.WROAR_END + 0.6, tC, t => 5.5 * sm(F.WROAR - 0.3, F.WROAR + 0.12, t) * (1 - sm(F.WROAR_END - 0.2, F.WROAR_END + 0.5, t)) + 2.8 * Math.sin((t - F.WROAR) * 14) * env(t, F.WROAR, F.WROAR_END, 0.1, 0.2), 24);
+                    // Authentic King Cobra Strike (ছোবল): first cocks the upright hooded neck back & high (-tC + up), then snaps downward & forward with chewing venom pulses!
+                    imp(F.WROAR - 0.75, F.WROAR + 0.05, tC.clone().multiplyScalar(-0.65).add(V(0, 0.76, 0)).normalize(), t => 5.2 * sm(F.WROAR - 0.75, F.WROAR - 0.18, t) * (1 - sm(F.WROAR - 0.10, F.WROAR + 0.04, t)), 26);
+                    imp(F.WROAR - 0.12, F.WROAR_END + 0.6, tC.clone().add(V(0, -0.22, 0)).normalize(), t => 6.4 * sm(F.WROAR - 0.10, F.WROAR + 0.08, t) * (1 - sm(F.WROAR_END - 0.2, F.WROAR_END + 0.5, t)) + 3.1 * Math.sin((t - F.WROAR) * 16) * env(t, F.WROAR, F.WROAR_END, 0.08, 0.2), 26, 85);
                     imp(F.FIRE2 + 0.05, F.FIRE2 + 2.6, V(-0.72, 0.62, 0.3).normalize(), t => 10 * sm(F.FIRE2 + 0.05, F.FIRE2 + 0.7, t) * (1 - sm(F.FIRE2 + 1.25, F.FIRE2 + 2.5, t)), 60, 70);
                     Choreo.fightActs(imp, d, red, 1);
                     { const t0 = F.CLASH2; imp(t0 - 0.1, t0 + 1.7, V(0.3, 0.75, 0.55).normalize(), t => 8 * sm(t0 - 0.06, t0 + 0.46, t) * (1 - sm(t0 + 0.8, t0 + 1.6, t)), 16); }
                 },
                 snake3Pose(t, st) {
                     const F = Film.T;
-                    // Pure physical snake: zero fire/frost breath, zero internal ember glow; wide fang-baring jaw strikes!
-                    st.charge = Math.max(env(t, F.WROAR - 0.8, F.WROAR_END + 0.2, 0.3, 0.3), 0.85 * env(t, 41.15, F.CLASH1 + 0.3, 0.3, 0.2), 0.9 * env(t, F.BOLT - 0.4, F.BOLT + 0.3, 0.25, 0.2), env(t, F.BEAM - 1.0, F.BLAST + 0.2, 0.5, 0.2));
-                    st.roar = Math.max(env(t, 27.6, 31.5, 0.3, 0.5), env(t, F.WROAR - 0.1, F.WROAR_END + 0.2, 0.1, 0.4), env(t, F.BOLT - 0.15, F.BOLT + 0.35, 0.1, 0.2), env(t, F.BEAM, F.BLAST + 2.5, 0.2, 0.8));
+                    // Pure physical King Cobra: full hood expansion during threat displays and strikes, wide 110-degree fang-baring gape!
+                    st.charge = Math.max(env(t, 35.0, 39.0, 0.5, 0.3), env(t, F.WROAR - 0.8, F.WROAR_END + 0.2, 0.3, 0.3), 0.9 * env(t, 41.0, F.CLASH1 + 0.3, 0.3, 0.2), 0.95 * env(t, F.BOLT - 0.5, F.BOLT + 0.3, 0.25, 0.2), env(t, F.BEAM - 1.2, F.BLAST + 0.2, 0.5, 0.2));
+                    st.roar = Math.max(env(t, 27.6, 31.8, 0.3, 0.5), 0.65 * env(t, 35.8, 38.9, 0.4, 0.3), env(t, F.WROAR - 0.1, F.WROAR_END + 0.2, 0.1, 0.4), env(t, F.BOLT - 0.15, F.BOLT + 0.35, 0.1, 0.2), env(t, F.BEAM - 0.4, F.BLAST + 2.5, 0.2, 0.8));
+                    st.hood = clamp(0.62 + 0.38 * Math.max(st.charge, st.roar, env(t, 34.0, 43.0, 0.6, 0.5), env(t, 48.0, 52.0, 0.4, 0.4), env(t, 58.0, 68.0, 0.5, 0.4)), 0.50, 1.15);
                     st.breath = 0;
-                    st.jaw = Math.max(st.roar, 0.95 * Choreo.bite(t, 1), 0.92 * env(t, F.WROAR - 0.1, F.WROAR_END + 0.1, 0.1, 0.25), 0.90 * env(t, F.BOLT - 0.15, F.BOLT + 0.25, 0.08, 0.15), 0.15 + 0.10 * Math.sin(t * 2.7 + 2));
+                    st.jaw = Math.max(st.roar, 0.98 * Choreo.bite(t, 1), 0.95 * env(t, F.WROAR - 0.1, F.WROAR_END + 0.1, 0.08, 0.25), 0.94 * env(t, F.BOLT - 0.15, F.BOLT + 0.25, 0.08, 0.15), 0.14 + 0.10 * Math.sin(t * 2.7 + 2));
                     st.glow = 0;
                     st.aim = 0;
-                    { const pain = env(t, F.CLASH2 - 0.05, F.CLASH2 + 1.0, 0.15, 0.4); st.roar = Math.max(st.roar, 0.8 * pain); st.jaw = Math.max(st.jaw, 0.95 * pain); }
+                    { const pain = env(t, F.CLASH2 - 0.05, F.CLASH2 + 1.0, 0.15, 0.4); st.roar = Math.max(st.roar, 0.85 * pain); st.jaw = Math.max(st.jaw, 0.98 * pain); }
                     st.reach = 0;
                     st.lid = 0;
                     st.vis = sm(26.6, 27.3, t) * (1 - sm(F.BLAST + 3.2, F.BLAST + 4.4, t));
@@ -6425,60 +6641,63 @@ varying vec2 vQ;
                 snake3Gaze(t, st, out) {
                     const F = Film.T, knot = env(t, KNOT0 - 0.3, F.SPLASH, 0.3, 0.3);
                     red.headAt(t, foe); gz(out);
-                    pull(out, 0.85 * env(t, 28.0, 31.8, 0.4, 0.4), red.st.head);
+                    pull(out, 0.88 * env(t, 28.0, 31.8, 0.4, 0.4), red.st.head);
                     pull(out, (1 - knot) * sm(31.5, 33.0, t) * (1 - sm(F.BLAST + 0.3, F.FINALE + 0.6, t)), foe);
                     if (knot > 0) pull(out, 0.95 * knot, Choreo.neckOf(red, t, tB));
                     return gzEnd(out);
                 },
 
-                // ---- 2-headed Green Anaconda / Pit-Viper (snake2): emerges from the lake water & left side to ambush Red in tandem ----
+                // ---- Banded Black King Cobra (snake2 · কালনাগিনী / শঙ্খচূড়): emerges from western lake & left ghats to ambush Red in tandem ----
                 snake2({ add, key, at, P, helix }) {
                     const F = Film.T, A = Film.A, C1 = A.clash1;
-                    // Starts deep under the western lake pool before 27.0s, then bursts up through the water and left bank!
+                    // Starts deep under the western lake pool before 27.0s, then bursts up through the water and rears its hood on the left flank!
                     at(0, -38, -14, 48); at(26.3, -26, -10, 45);
                     at(27.3, -18, 0.05, 42);                            // bursts up out of the lake water on the left side!
-                    P(-10, 1.5, 39, 28.4); P(-2, 0.8, 35, 29.5);        // slithers & swims across the open lake pool throwing water wakes
-                    P(-14, 4.5, 32, 30.6); P(-24, 14.0, 26, 31.8);      // climbs up the left rocky bank and western terrace
-                    P(-28, 26.0, 18, 33.0); P(-22, 36.0, 12, 34.2); P(-6, 44.0, 14, 35.2);
-                    // Joins snake3 at FACEOFF (36.0s) to corner Red from both flanks
-                    P(12, 48.5, 15.5, F.FACEOFF); P(14, 50.0, 15.0, 38.4);
-                    // WROAR (39.0s-41.2s): lunges in and bites Red's lower neck/flank alongside snake3!
-                    P(-12.5, 49.5, 14.2, 39.45); P(-13.5, 48.8, 14.6, 40.25);
-                    P(12.0, 50.5, 15.5, 41.15);
-                    // CLASH1 (42.0s): clamps its 2 fang-filled heads onto Red at Film.A.clash1!
-                    P(C1.x + 7.5, C1.y + 3.2, C1.z + 3.0, F.CLASH1); P(C1.x + 4.5, C1.y + 7.0, C1.z + 1.5, 42.75);
-                    // Pursues Red relentlessly around the spire ledges
+                    P(-10, 2.0, 39, 28.4); P(-2, 1.1, 35, 29.5);        // glides & swims across the open lake pool throwing water wakes
+                    P(-14, 5.5, 32, 30.6); P(-24, 15.5, 26, 31.8);      // climbs up the left rocky bank and western terrace
+                    P(-28, 28.0, 18, 33.0); P(-22, 39.0, 12, 34.2); P(-6, 48.0, 14, 35.2);
+                    // Joins snake3 at FACEOFF (36.0s), rearing its hooded neck high on the flank to corner Red!
+                    P(11, 53.0, 15.5, F.FACEOFF); P(13.5, 54.5, 15.0, 38.4);
+                    // WROAR (39.0s-41.2s): downward-forward King Cobra whip-strike (ছোবল) biting Red's lower neck/flank alongside snake3!
+                    P(-12.5, 49.8, 14.2, 39.45); P(-13.5, 49.0, 14.6, 40.25);
+                    P(12.0, 54.0, 15.5, 41.15);
+                    // CLASH1 (42.0s): clamps its fang-filled King Cobra jaws onto Red at Film.A.clash1!
+                    P(C1.x + 7.5, C1.y + 3.5, C1.z + 3.0, F.CLASH1); P(C1.x + 4.5, C1.y + 7.4, C1.z + 1.5, 42.75);
+                    // Pursues Red relentlessly around the mountain ledges
                     P(14, 65, -4, 43.3); P(18, 72, -24, 43.95); P(20, 80, -58, 44.55); P(4, 85, -80, 45.15); P(-14, 82, -62, 45.75);
-                    P(-14, 72, -32, 46.4); P(-4, 60, -16, 47.2); P(6, 48, 12, 48.3); P(12, 44, 24, 49.0);
-                    P(-9.0, 58.5, 18.5, F.BOLT);                        // lunges with fangs bared at Red during BOLT!
-                    P(15, 64, 10, 50.12);
+                    P(-14, 72, -32, 46.4); P(-4, 60, -16, 47.2); P(6, 48, 12, 48.3); P(12, 50, 24, 49.0);
+                    P(-9.0, 59.0, 18.5, F.BOLT);                        // downward whip-strike with flared hood at Red during BOLT!
+                    P(15, 65, 10, 50.12);
                     // Joins the triple-entwined constriction knot (50.75..57.0) crushing Red down into the lake!
                     const KN = Choreo.KN;
                     for (let k = 0; k < KN.length - 1; k++) {
                         const [t0, n0] = KN[k], [t1, n1] = KN[k + 1], m = Math.max(2, Math.round((n1 - n0) * 8));
                         for (let i = k ? 1 : 0; i <= m; i++) { const u = i / m, n = lerp(n0, n1, u); Choreo.knotAt(n + 0.33, 1, tD); tD.x -= 3.2 * Math.sin(n * TAU); tD.z += 3.2 * Math.cos(n * TAU); P(tD.x, tD.y, tD.z, i === m || (i === 0 && !k) ? lerp(t0, t1, u) : null); }
                     }
-                    // Bursts out of the lake alongside snake3 and coils at HW2 for the BEAM showdown against the two Dragons
+                    // Bursts out of the lake alongside snake3 and rears its hood from its coil at HW2 for the BEAM showdown
                     const X = A.exitW, HW = Choreo.HOV[1];
                     P(X.x + 4.5, -6.5, X.z + 2.0, 57.50); P(X.x + 5.0, 0.05, X.z + 2.2, 57.72); P(X.x + 5.0, 9.5, X.z + 2.5, 57.95); P(14, 28, 36, 58.5); P(24, 44, 12, 59.1); P(28, 56, -18, 59.75);
                     helix(59.75, 61.8, 38.5, -22, 140, 720, 9.5, 9.5, 56, 69.5, 45, 0.85, 2);
-                    add(HW.x - 2.5, HW.y - 6.2, HW.z + 4.5, 'hov2'); key(62.3, 'hov2'); key(F.BEAM, 'hov2', 0.05); key(F.BLAST, 'hov2', 0.10);
+                    add(HW.x - 2.5, HW.y - 5.2, HW.z + 4.5, 'hov2'); key(62.3, 'hov2'); key(F.BEAM, 'hov2', 0.05); key(F.BLAST, 'hov2', 0.10);
                     // Blasted back and defeated by the Dragon Team at BLAST (67.5s)!
                     P(52, 50, -8, F.BLAST + 0.8); P(82, 22, -22, F.BLAST + 2.2); P(118, -18, -45, F.BLAST + 4.0); P(160, -60, -75, 76.0); P(200, -95, -100, 90.0);
                 },
                 snake2Acts(imp, d) {
                     const F = Film.T;
                     red.railAt(F.WROAR, tA); d.railAt(F.WROAR, tB); tC.subVectors(tA, tB).normalize();
-                    imp(F.WROAR - 0.25, F.WROAR_END + 0.6, tC, t => 5.0 * sm(F.WROAR - 0.2, F.WROAR + 0.18, t) * (1 - sm(F.WROAR_END - 0.2, F.WROAR_END + 0.5, t)) + 2.5 * Math.cos((t - F.WROAR) * 15) * env(t, F.WROAR, F.WROAR_END, 0.1, 0.2), 22);
+                    // King Cobra cock-back & downward whip-strike (ছোবল)
+                    imp(F.WROAR - 0.65, F.WROAR + 0.08, tC.clone().multiplyScalar(-0.6).add(V(0, 0.78, 0)).normalize(), t => 4.8 * sm(F.WROAR - 0.65, F.WROAR - 0.15, t) * (1 - sm(F.WROAR - 0.08, F.WROAR + 0.06, t)), 24);
+                    imp(F.WROAR - 0.08, F.WROAR_END + 0.6, tC.clone().add(V(0, -0.20, 0)).normalize(), t => 5.8 * sm(F.WROAR - 0.08, F.WROAR + 0.14, t) * (1 - sm(F.WROAR_END - 0.2, F.WROAR_END + 0.5, t)) + 2.8 * Math.cos((t - F.WROAR) * 16) * env(t, F.WROAR, F.WROAR_END, 0.08, 0.2), 24, 80);
                     Choreo.fightActs(imp, d, red, 1);
                 },
                 snake2Pose(t, st) {
                     const F = Film.T;
-                    // Pure physical snake: zero fire/frost breath, zero internal ember glow; wide fang-baring jaw strikes!
-                    st.charge = Math.max(env(t, F.WROAR - 0.8, F.WROAR_END + 0.2, 0.3, 0.3), 0.85 * env(t, 41.0, F.CLASH1 + 0.3, 0.3, 0.2), 0.85 * env(t, F.BOLT - 0.4, F.BOLT + 0.3, 0.25, 0.2), env(t, F.BEAM - 1.0, F.BLAST + 0.2, 0.5, 0.2));
-                    st.roar = Math.max(env(t, 27.5, 31.5, 0.3, 0.5), env(t, F.WROAR - 0.05, F.WROAR_END + 0.2, 0.15, 0.4), env(t, F.CLASH1 - 0.1, F.CLASH1 + 0.9, 0.1, 0.4), env(t, F.BEAM, F.BLAST + 2.5, 0.2, 0.8));
+                    // Pure physical King Cobra: full hood expansion, zero fire/frost breath, wide fang-baring jaw strikes!
+                    st.charge = Math.max(env(t, 35.0, 39.0, 0.5, 0.3), env(t, F.WROAR - 0.8, F.WROAR_END + 0.2, 0.3, 0.3), 0.9 * env(t, 41.0, F.CLASH1 + 0.3, 0.3, 0.2), 0.92 * env(t, F.BOLT - 0.5, F.BOLT + 0.3, 0.25, 0.2), env(t, F.BEAM - 1.2, F.BLAST + 0.2, 0.5, 0.2));
+                    st.roar = Math.max(env(t, 27.5, 31.8, 0.3, 0.5), 0.65 * env(t, 35.8, 38.9, 0.4, 0.3), env(t, F.WROAR - 0.05, F.WROAR_END + 0.2, 0.15, 0.4), env(t, F.CLASH1 - 0.1, F.CLASH1 + 0.9, 0.1, 0.4), env(t, F.BEAM - 0.4, F.BLAST + 2.5, 0.2, 0.8));
+                    st.hood = clamp(0.62 + 0.38 * Math.max(st.charge, st.roar, env(t, 34.0, 43.0, 0.6, 0.5), env(t, 48.0, 52.0, 0.4, 0.4), env(t, 58.0, 68.0, 0.5, 0.4)), 0.50, 1.15);
                     st.breath = 0;
-                    st.jaw = Math.max(st.roar, 0.95 * Choreo.bite(t, 0), 0.92 * env(t, F.WROAR - 0.1, F.WROAR_END + 0.1, 0.1, 0.25), 0.88 * env(t, F.BOLT - 0.15, F.BOLT + 0.25, 0.08, 0.15), 0.16 + 0.10 * Math.sin(t * 2.9 + 1));
+                    st.jaw = Math.max(st.roar, 0.98 * Choreo.bite(t, 0), 0.95 * env(t, F.WROAR - 0.1, F.WROAR_END + 0.1, 0.08, 0.25), 0.92 * env(t, F.BOLT - 0.15, F.BOLT + 0.25, 0.08, 0.15), 0.15 + 0.10 * Math.sin(t * 2.9 + 1));
                     st.glow = 0;
                     st.aim = 0;
                     st.reach = 0; st.lid = 0;
@@ -12698,10 +12917,10 @@ vec4 wkBend(vec3 base, vec4 e0, vec4 e1, vec4 e2, float w, float z){            
             const steps = [];
             const add = (label, w, fn) => steps.push({ label, w, fn });
             add('painting the sky', 30, async prog => { let p = 0; while (p < 1) { p = Sky.bakeStep(R, 40); prog(p); await tick(); } scene.environment = Sky.makeEnv(R); scene.environmentIntensity = ENV0; Tex.init(R); });
-            if (typeof Rock !== 'undefined') add('carving ghats and cliffs', 14, async prog => { await Rock.build(scene, prog, tick); });
+            if (typeof Rock !== 'undefined') add('carving bengali-indian hills & ghats', 14, async prog => { await Rock.build(scene, prog, tick); });
             if (typeof Arch !== 'undefined') add('building mughal palace ruins', 8, async prog => { await Arch.build(scene, prog, tick); });
             if (typeof Flora !== 'undefined') add('growing banyan, pakur & shapla', 14, async prog => { await Flora.build(scene, prog, tick); });
-            if (typeof Dragon !== 'undefined') add('waking dragons & black serpents', 14, async prog => { await Dragon.build(scene, fx, prog, tick); if (typeof Wake !== 'undefined' && Wake.build) Wake.build(scene, fx); });
+            if (typeof Dragon !== 'undefined') add('waking royal king cobras & dragons', 14, async prog => { await Dragon.build(scene, fx, prog, tick); if (typeof Wake !== 'undefined' && Wake.build) Wake.build(scene, fx); });
             if (typeof FX !== 'undefined') add('mist, water, leaves', 6, async prog => { await FX.build(scene, fx, prog, tick); });
             if (typeof Air !== 'undefined') add('moving the air', 3, async prog => { Air.build(scene, fx); prog(1); });
             if (typeof Score !== 'undefined') add('tuning the erhu', 6, async prog => { Score.start(); });
